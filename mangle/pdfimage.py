@@ -31,7 +31,7 @@ class PDFImage(object):
         self.pageSize = KindleData.Profiles[self.currentDevice][0]
         # pagesize could be letter or A4 for standarization but we need to control some image sizes
         self.canvas = canvas.Canvas(outputPath, pagesize=self.pageSize)
-        self.canvas.setAuthor("Mangle")
+        self.canvas.setAuthor("Poutoux")
         self.canvas.setTitle(self.bookTitle)
         self.canvas.setSubject("Created for " + self.currentDevice)
 

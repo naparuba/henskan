@@ -23,18 +23,18 @@ import util
 class DialogOptions(QtGui.QDialog):
     def __init__(self, parent, book):
         QtGui.QDialog.__init__(self, parent)
-
+        
         uic.loadUi(util.buildResPath('mangle/ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
-
+        
         self.book = book
         self.moveOptionsToDialog()
-
-
+    
+    
     def onAccept(self):
         self.moveDialogToOptions()
-
-
+    
+    
     # Get options from current book (like a loaded one) and set the dialog values
     def moveOptionsToDialog(self):
         self.lineEditTitle.setText(self.book.title or 'Untitled')
@@ -46,16 +46,16 @@ class DialogOptions(QtGui.QDialog):
         self.checkboxStretch.setChecked(self.book.imageFlags & ImageFlags.Stretch)
         self.checkboxQuantize.setChecked(self.book.imageFlags & ImageFlags.Quantize)
         self.checkboxFrame.setChecked(self.book.imageFlags & ImageFlags.Frame)
-
-
+    
+    
     # Save parameters set on the dialogs to the book object if need
     def moveDialogToOptions(self):
         # First get dialog values
-        title        = self.lineEditTitle.text()
-        device       = self.comboBoxDevice.currentText()
+        title = self.lineEditTitle.text()
+        device = self.comboBoxDevice.currentText()
         outputFormat = self.comboBoxFormat.currentText()
-        overwrite    = self.checkboxOverwrite.isChecked()
-
+        overwrite = self.checkboxOverwrite.isChecked()
+        
         # Now compute flags
         imageFlags = 0
         if self.checkboxOrient.isChecked():
@@ -74,22 +74,22 @@ class DialogOptions(QtGui.QDialog):
             imageFlags |= ImageFlags.SplitLeftRight
         if self.checkboxAutoCrop.isChecked():
             imageFlags |= ImageFlags.AutoCrop
-
+        
         # If we did modified a value, update the book
         # and only if we did change something to not
         # warn for nothing the user
         modified = (
-            self.book.title != title or
-            self.book.device != device or
-            self.book.overwrite != overwrite or
-            self.book.imageFlags != imageFlags or
-            self.book.outputFormat != outputFormat
+                self.book.title != title or
+                self.book.device != device or
+                self.book.overwrite != overwrite or
+                self.book.imageFlags != imageFlags or
+                self.book.outputFormat != outputFormat
         )
-
+        
         if modified:
-            self.book.modified     = True
-            self.book.title        = title
-            self.book.device       = device
-            self.book.overwrite    = overwrite
-            self.book.imageFlags   = imageFlags
+            self.book.modified = True
+            self.book.title = title
+            self.book.device = device
+            self.book.overwrite = overwrite
+            self.book.imageFlags = imageFlags
             self.book.outputFormat = outputFormat

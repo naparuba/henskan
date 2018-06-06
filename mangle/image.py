@@ -14,9 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-
-from PIL import Image, ImageDraw, ImageStat, ImageChops
+from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
 
 
 class ImageFlags:
@@ -25,10 +23,10 @@ class ImageFlags:
     Frame = 1 << 2
     Quantize = 1 << 3
     Stretch = 1 << 4
-    SplitRightLeft = 1 << 5    # split right then left
-    SplitRight = 1 << 6        # split only the right page
-    SplitLeft = 1 << 7         # split only the left page
-    SplitLeftRight = 1 << 8    # split left then right page
+    SplitRightLeft = 1 << 5  # split right then left
+    SplitRight = 1 << 6  # split only the right page
+    SplitLeft = 1 << 7  # split only the left page
+    SplitLeftRight = 1 << 8  # split left then right page
     AutoCrop = 1 << 9
 
 
@@ -39,7 +37,7 @@ class KindleData:
         0xaa, 0xaa, 0xaa,
         0xff, 0xff, 0xff
     ]
-
+    
     Palette15a = [
         0x00, 0x00, 0x00,
         0x11, 0x11, 0x11,
@@ -57,7 +55,7 @@ class KindleData:
         0xdd, 0xdd, 0xdd,
         0xff, 0xff, 0xff,
     ]
-
+    
     Palette15b = [
         0x00, 0x00, 0x00,
         0x11, 0x11, 0x11,
@@ -75,20 +73,20 @@ class KindleData:
         0xee, 0xee, 0xee,
         0xff, 0xff, 0xff,
     ]
-
+    
     Profiles = {
-        'Kindle 1': ((600, 800), Palette4),
-        'Kindle 2/3/Touch': ((600, 800), Palette15a),
-        'Kindle 4 & 5': ((600, 800), Palette15b),
-        'Kindle DX/DXG': ((824, 1200), Palette15a),
-        'Kindle Paperwhite 1 & 2': ((758, 1024), Palette15b),
+        'Kindle 1'                        : ((600, 800), Palette4),
+        'Kindle 2/3/Touch'                : ((600, 800), Palette15a),
+        'Kindle 4 & 5'                    : ((600, 800), Palette15b),
+        'Kindle DX/DXG'                   : ((824, 1200), Palette15a),
+        'Kindle Paperwhite 1 & 2'         : ((758, 1024), Palette15b),
         'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette15b),
-        'Kobo Mini/Touch': ((600, 800), Palette15b),
-        'Kobo Glo': ((768, 1024), Palette15b),
-        'Kobo Glo HD': ((1072, 1448), Palette15b),
-        'Kobo Aura': ((758, 1024), Palette15b),
-        'Kobo Aura HD': ((1080, 1440), Palette15b),
-        'Kobo Aura H2O': ((1080, 1430), Palette15a),
+        'Kobo Mini/Touch'                 : ((600, 800), Palette15b),
+        'Kobo Glo'                        : ((768, 1024), Palette15b),
+        'Kobo Glo HD'                     : ((1072, 1448), Palette15b),
+        'Kobo Aura'                       : ((758, 1024), Palette15b),
+        'Kobo Aura HD'                    : ((1080, 1440), Palette15b),
+        'Kobo Aura H2O'                   : ((1080, 1430), Palette15a),
     }
 
 
@@ -101,23 +99,24 @@ def protect_bad_image(func):
         # args will be "image" and other params are after
         try:
             return func(*args, **kwargs)
-        except IOError: # Exception from PIL about bad image
+        except IOError:  # Exception from PIL about bad image
             return args[0]
-
-    return func_wrapper
     
+    
+    return func_wrapper
 
-@protect_bad_image    
+
+@protect_bad_image
 def splitLeft(image):
     widthImg, heightImg = image.size
-
+    
     return image.crop((0, 0, widthImg / 2, heightImg))
 
 
 @protect_bad_image
 def splitRight(image):
     widthImg, heightImg = image.size
-
+    
     return image.crop((widthImg / 2, 0, widthImg, heightImg))
 
 
@@ -126,17 +125,17 @@ def quantizeImage(image, palette):
     colors = len(palette) / 3
     if colors < 256:
         palette = palette + palette[:3] * (256 - colors)
-
+    
     palImg = Image.new('P', (1, 1))
     palImg.putpalette(palette)
-
+    
     return image.quantize(palette=palImg)
 
 
 @protect_bad_image
 def stretchImage(image, size):
     widthDev, heightDev = size
-
+    
     return image.resize((widthDev, heightDev), Image.ANTIALIAS)
 
 
@@ -144,14 +143,14 @@ def stretchImage(image, size):
 def resizeImage(image, size):
     widthDev, heightDev = size
     widthImg, heightImg = image.size
-
+    
     if widthImg <= widthDev and heightImg <= heightDev:
         return image
-
+    
     ratioImg = float(widthImg) / float(heightImg)
     ratioWidth = float(widthImg) / float(widthDev)
     ratioHeight = float(heightImg) / float(heightDev)
-
+    
     if ratioWidth > ratioHeight:
         widthImg = widthDev
         heightImg = int(widthDev / ratioImg)
@@ -160,7 +159,7 @@ def resizeImage(image, size):
         widthImg = int(heightDev * ratioImg)
     else:
         widthImg, heightImg = size
-
+    
     return image.resize((widthImg, heightImg), Image.ANTIALIAS)
 
 
@@ -168,7 +167,7 @@ def resizeImage(image, size):
 def formatImage(image):
     if image.mode == 'RGB':
         return image
-
+    
     return image.convert('RGB')
 
 
@@ -176,7 +175,7 @@ def formatImage(image):
 def orientImage(image, size):
     widthDev, heightDev = size
     widthImg, heightImg = image.size
-
+    
     if (widthImg > heightImg) != (widthDev > heightDev):
         return image.rotate(90, Image.BICUBIC, True)
     return image
@@ -185,41 +184,116 @@ def orientImage(image, size):
 # We will auto crop the image, by removing just white part around the image
 # by inverting colors, and asking a bounder box ^^
 @protect_bad_image
+def BlurautoCropImage(image):
+    orig_image = image
+    power = 2.0  # mode: pifometre
+    # work on a black image
+    blur_image = ImageOps.invert(image.convert(mode='L'))
+    blur_image = blur_image.point(lambda x: x and 255)
+    blur_image = blur_image.filter(ImageFilter.MinFilter(size=3))
+    blur_image = blur_image.filter(ImageFilter.GaussianBlur(radius=5))
+    blur_image = blur_image.point(lambda x: (x >= 16 * power) and x)
+    if blur_image.getbbox():
+        return orig_image.crop(blur_image.getbbox())
+    return orig_image
+
+
+def _get_image_variance(image):
+    return ImageStat.Stat(image).var[0]
+
+
+@protect_bad_image
 def autoCropImage(image):
+    fixed_threshold = 5.0
+    
+    if ImageChops.invert(image).getbbox() is None:
+        image = simpleCropImage(image)
+        return image
+    
+    width, height = image.size
+    delta = 2
+    diff = delta
+    if _get_image_variance(image) < 2 * fixed_threshold:
+        return image
+    
+    while _get_image_variance(image.crop((0, height - diff, width, height))) < fixed_threshold and diff < height:
+        diff += delta
+    diff -= delta
+    pageNumberCut1 = diff
+    if diff < delta:
+        diff = delta
+    oldStat = _get_image_variance(image.crop((0, height - diff, width, height)))
+    diff += delta
+    while _get_image_variance(image.crop((0, height - diff, width, height))) - oldStat > 0 and diff < height // 4:
+        oldStat = _get_image_variance(image.crop((0, height - diff, width, height)))
+        diff += delta
+    diff -= delta
+    pageNumberCut2 = diff
+    diff += delta
+    oldStat = _get_image_variance(image.crop((0, height - diff, width, height - pageNumberCut2)))
+    while _get_image_variance(image.crop((0, height - diff, width, height - pageNumberCut2))) < fixed_threshold + oldStat and diff < height // 4:
+        diff += delta
+    diff -= delta
+    pageNumberCut3 = diff
+    delta = 5
+    diff = delta
+    while _get_image_variance(image.crop((0, height - pageNumberCut2, diff, height))) < fixed_threshold and diff < width:
+        diff += delta
+    diff -= delta
+    pageNumberX1 = diff
+    diff = delta
+    while _get_image_variance(image.crop((width - diff, height - pageNumberCut2, width, height))) < fixed_threshold and diff < width:
+        diff += delta
+    diff -= delta
+    pageNumberX2 = width - diff
+    if pageNumberCut3 - pageNumberCut1 > 2 * delta and float(pageNumberX2 - pageNumberX1) / float(pageNumberCut2 - pageNumberCut1) <= 9.0 \
+            and _get_image_variance(image.crop((0, height - pageNumberCut3, width, height))) / ImageStat.Stat(image).var[0] < 0.1 \
+            and pageNumberCut3 < height / 4 - delta:
+        diff = pageNumberCut3
+    else:
+        diff = pageNumberCut1
+    
+    image = image.crop((0, 0, width, height - diff))
+    image = simpleCropImage(image)
+    image = BlurautoCropImage(image)
+    return image
+
+
+@protect_bad_image
+def simpleCropImage(image):
     try:
         x0, y0, xend, yend = ImageChops.invert(image).getbbox()
-    except TypeError: # bad image, specific to chops
+    except TypeError:  # bad image, specific to chops
         return image
     image = image.crop((x0, y0, xend, yend))
-
     return image
 
 
 def frameImage(image, foreground, background, size):
     widthDev, heightDev = size
     widthImg, heightImg = image.size
-
+    
     pastePt = (
         max(0, (widthDev - widthImg) / 2),
         max(0, (heightDev - heightImg) / 2)
     )
-
+    
     corner1 = (
         pastePt[0] - 1,
         pastePt[1] - 1
     )
-
+    
     corner2 = (
         pastePt[0] + widthImg + 1,
         pastePt[1] + heightImg + 1
     )
-
+    
     imageBg = Image.new(image.mode, size, background)
     imageBg.paste(image, pastePt)
-
+    
     draw = ImageDraw.Draw(imageBg)
     draw.rectangle([corner1, corner2], outline=foreground)
-
+    
     return imageBg
 
 
@@ -228,7 +302,7 @@ def loadImage(source):
         return Image.open(source)
     except IOError:
         raise RuntimeError('Cannot read image file %s' % source)
-    
+
 
 def saveImage(image, target):
     try:
@@ -244,8 +318,8 @@ def isSplitable(source):
     image = loadImage(source)
     try:
         widthImg, heightImg = image.size
-        return  widthImg > heightImg
-    except IOError: 
+        return widthImg > heightImg
+    except IOError:
         raise RuntimeError('Cannot read image file %s' % source)
 
 
@@ -256,10 +330,10 @@ def convertImage(source, target, device, flags):
         raise RuntimeError('Unexpected output device %s' % device)
     # Load image from source path
     image = loadImage(source)
-
+    
     # Format according to palette
     image = formatImage(image)
-
+    
     # Apply flag transforms
     if flags & ImageFlags.SplitRight:
         image = splitRight(image)
@@ -269,7 +343,7 @@ def convertImage(source, target, device, flags):
         image = splitLeft(image)
     if flags & ImageFlags.SplitLeftRight:
         image = splitRight(image)
-
+    
     # Auto crop the image, but before manage size and co, clean the source so
     if flags & ImageFlags.AutoCrop:
         image = autoCropImage(image)

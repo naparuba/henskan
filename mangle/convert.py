@@ -18,7 +18,6 @@ import os
 import shutil
 from PyQt4 import QtGui, QtCore
 
-
 from image import ImageFlags
 import cbz
 import image
@@ -28,16 +27,16 @@ import pdfimage
 class DialogConvert(QtGui.QProgressDialog):
     def __init__(self, parent, book, directory):
         QtGui.QProgressDialog.__init__(self)
-
-        self.book     = book
+        
+        self.book = book
         self.bookPath = os.path.join(unicode(directory), unicode(self.book.title))
-
+        
         self.timer = None
         self.setWindowTitle('Exporting book...')
         self.setMaximum(len(self.book.images))
         self.setValue(0)
         self.increment = 0
-
+        
         self.archive = None
         if 'CBZ' in self.book.outputFormat:
             self.archive = cbz.Archive(self.bookPath)
@@ -45,45 +44,44 @@ class DialogConvert(QtGui.QProgressDialog):
         self.pdf = None
         if "PDF" in self.book.outputFormat:
             self.pdf = pdfimage.PDFImage(self.bookPath, str(self.book.title), str(self.book.device))
-
-
-
+    
+    
     def showEvent(self, event):
         if self.timer is None:
             self.timer = QtCore.QTimer()
             self.timer.timeout.connect(self.onTimer)
             self.timer.start(0)
-
-
+    
+    
     def hideEvent(self, event):
         """Called when the dialog finishes processing."""
-
+        
         # Close the archive if we created a CBZ file
         if self.archive is not None:
             self.archive.close()
         # Close and generate the PDF File
         if self.pdf is not None:
             self.pdf.close()
-
+        
         # Remove image directory if the user didn't wish for images
         if 'Image' not in self.book.outputFormat:
             shutil.rmtree(self.bookPath)
-
-
+    
+    
     def convertAndSave(self, source, target, device, flags, archive, pdf):
         image.convertImage(source, target, device, flags)
         if archive is not None:
             archive.addFile(target)
         if pdf is not None:
             pdf.addImage(target)
-
-                
+    
+    
     def onTimer(self):
         index = self.value()
         pages_split = self.increment
         target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split))
         source = unicode(self.book.images[index])
-
+        
         if index == 0:
             try:
                 if not os.path.isdir(self.bookPath):
@@ -92,37 +90,37 @@ class DialogConvert(QtGui.QProgressDialog):
                 QtGui.QMessageBox.critical(self, 'Mangle', 'Cannot create directory %s' % self.bookPath)
                 self.close()
                 return
-
+            
             try:
                 base = os.path.join(self.bookPath, unicode(self.book.title))
-
+                
                 mangaName = base + '.manga'
                 if self.book.overwrite or not os.path.isfile(mangaName):
                     manga = open(mangaName, 'w')
                     manga.write('\x00')
                     manga.close()
-
+                
                 mangaSaveName = base + '.manga_save'
                 if self.book.overwrite or not os.path.isfile(mangaSaveName):
                     mangaSave = open(base + '.manga_save', 'w')
                     saveData = u'LAST=/mnt/us/pictures/%s/%s' % (self.book.title, os.path.split(target)[1])
                     mangaSave.write(saveData.encode('utf-8'))
                     mangaSave.close()
-
+            
             except IOError:
                 QtGui.QMessageBox.critical(self, 'Mangle', 'Cannot write manga file(s) to directory %s' % self.bookPath)
                 self.close()
                 return False
-
+        
         self.setLabelText('Processing %s...' % os.path.split(source)[1])
-
+        
         try:
             if self.book.overwrite or not os.path.isfile(target):
                 device = str(self.book.device)
                 flags = self.book.imageFlags
                 archive = self.archive
                 pdf = self.pdf
-
+                
                 # Check if page wide enough to split
                 if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
                     if not image.isSplitable(source):
@@ -131,30 +129,30 @@ class DialogConvert(QtGui.QProgressDialog):
                                       ImageFlags.SplitLeft]
                         for f in splitFlags:
                             flags &= ~f
-
+                
                 # For right page (if requested in options and need for this image)
                 if flags & ImageFlags.SplitRightLeft:
                     self.convertAndSave(source, target, device,
                                         flags ^ ImageFlags.SplitRightLeft | ImageFlags.SplitRight,
                                         archive, pdf)
-
+                    
                     # Change target for left page
                     target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split + 1))
                     self.increment += 1
-
+                
                 # For right page (if requested), but in inverted mode
                 if flags & ImageFlags.SplitLeftRight:
                     self.convertAndSave(source, target, device,
                                         flags ^ ImageFlags.SplitLeftRight | ImageFlags.SplitLeft,
                                         archive, pdf)
-
+                    
                     # Change target for left page
                     target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split + 1))
                     self.increment += 1
-
+                
                 # Convert page
                 self.convertAndSave(source, target, device, flags, archive, pdf)
-
+        
         except RuntimeError, error:
             result = QtGui.QMessageBox.critical(
                 self,
@@ -166,5 +164,5 @@ class DialogConvert(QtGui.QProgressDialog):
             if result == QtGui.QMessageBox.Abort:
                 self.close()
                 return
-
+        
         self.setValue(index + 1)
