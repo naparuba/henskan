@@ -99,7 +99,7 @@ def protect_bad_image(func):
         # args will be "image" and other params are after
         try:
             return func(*args, **kwargs)
-        except IOError:  # Exception from PIL about bad image
+        except (IOError, ValueError):  # Exception from PIL about bad image
             return args[0]
     
     
