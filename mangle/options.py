@@ -46,6 +46,7 @@ class DialogOptions(QtGui.QDialog):
         self.checkboxStretch.setChecked(self.book.imageFlags & ImageFlags.Stretch)
         self.checkboxQuantize.setChecked(self.book.imageFlags & ImageFlags.Quantize)
         self.checkboxFrame.setChecked(self.book.imageFlags & ImageFlags.Frame)
+        self.checkboxAutoCrop.setChecked(self.book.imageFlags & ImageFlags.AutoCrop)
     
     
     # Save parameters set on the dialogs to the book object if need

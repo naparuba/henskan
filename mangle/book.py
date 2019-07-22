@@ -45,10 +45,10 @@ def natural_key(string_):
 
 
 class Book(object):
-    DefaultDevice = 'Kindle Paperwhite 3/Voyage/Oasis'
+    DefaultDevice = 'Kobo Aura H2O'
     DefaultOutputFormat = 'CBZ only'
     DefaultOverwrite = True
-    DefaultImageFlags = ImageFlags.Orient | ImageFlags.Resize | ImageFlags.Quantize
+    DefaultImageFlags = ImageFlags.Orient | ImageFlags.Resize | ImageFlags.Quantize | ImageFlags.AutoCrop
     
     
     def __init__(self):
