@@ -18,6 +18,7 @@ from os.path import basename
 import os.path
 import tempfile
 from zipfile import ZipFile
+import hashlib
 
 from PyQt4 import QtGui, QtCore, QtXml, uic
 
@@ -378,6 +379,55 @@ class MainWindowBook(QtGui.QMainWindow):
             self.book.modified = True
     
     
+    # We will look at duplicate images, and remove them
+    # NOTE: we cannot hash all files, so first look at size
+    #       duplicate, and then for same size, we can compute
+    #       the hash.
+    def _clean_duplicates(self):
+        file_by_sizes = {}
+        _idx_to_delete = []
+        
+        # First look at same size
+        for idx, filename in enumerate(self.book.images):
+            filename = unicode(filename)
+            size = os.path.getsize(filename)
+            # print "File: %s => %s " % (filename, size)
+            if size not in file_by_sizes:
+                file_by_sizes[size] = []
+            file_by_sizes[size].append((idx, filename))
+        
+        # For same size, compute hash
+        sizes = file_by_sizes.keys()
+        sizes.sort()
+        for size in sizes:
+            nb_elements = len(file_by_sizes[size])
+            if nb_elements == 1:
+                continue
+            _hashs = {}
+            for idx, filename in file_by_sizes[size]:
+                with open(filename, 'rb') as f:
+                    buf = f.read()
+                    _hash = hashlib.sha1(buf).hexdigest()
+                    if _hash not in _hashs:
+                        _hashs[_hash] = []
+                    _hashs[_hash].append(idx)
+            for idxs in _hashs.values():
+                if len(idxs) == 1:
+                    continue
+                _idx_to_delete.extend(idxs)
+        
+        # Now clean duplicate images
+        if _idx_to_delete:
+            print "We will clean a total of %s of %s images" % (len(_idx_to_delete), len(self.book.images))
+            # We need to remove by the end
+            _idx_to_delete.sort()
+            _idx_to_delete.reverse()
+            for idx in _idx_to_delete:
+                self.book.images.pop(idx)
+                self.listWidgetFiles.takeItem(idx)
+            self.book.modified = True
+    
+    
     def addImageFiles(self, filenames):
         filenamesListed = []
         for i in xrange(0, self.listWidgetFiles.count()):
@@ -390,6 +440,8 @@ class MainWindowBook(QtGui.QMainWindow):
                 self.listWidgetFiles.addItem(filename)
                 self.book.images.append(filename)
                 self.book.modified = True
+        
+        self._clean_duplicates()
     
     
     def addImageDirs(self, directories):
