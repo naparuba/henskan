@@ -6,6 +6,7 @@ dist
 *.cbz
 *.bat
 .idea/
+mangle/tmp/*
 
 *.DS_Store
 .AppleDouble

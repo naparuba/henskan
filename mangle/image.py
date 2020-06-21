@@ -12,6 +12,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import time
+
+DEBUG = False
+
+
+def set_debug():
+    global DEBUG
+    DEBUG = True
 
 
 from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
@@ -28,6 +36,7 @@ class ImageFlags:
     SplitLeft = 1 << 7  # split only the left page
     SplitLeftRight = 1 << 8  # split left then right page
     AutoCrop = 1 << 9
+    Webtoon = 1 << 10
 
 
 class KindleData:
@@ -160,6 +169,9 @@ def resizeImage(image, size):
     else:
         widthImg, heightImg = size
     
+    if DEBUG:
+        print ' * Resizing image from %s to %s/%s' % (image.size, widthImg, heightImg)
+    
     return image.resize((widthImg, heightImg), Image.ANTIALIAS)
 
 
@@ -193,9 +205,23 @@ def BlurautoCropImage(image):
     blur_image = blur_image.filter(ImageFilter.MinFilter(size=3))
     blur_image = blur_image.filter(ImageFilter.GaussianBlur(radius=5))
     blur_image = blur_image.point(lambda x: (x >= 16 * power) and x)
-    if blur_image.getbbox():
-        return orig_image.crop(blur_image.getbbox())
+    blur_bbox = blur_image.getbbox()
+    if blur_bbox:
+        return orig_image.crop(blur_bbox)
     return orig_image
+
+
+def _find_dominant_color(img):
+    # Resizing parameters
+    width, height = 150, 150
+    img = img.resize((width, height), resample=0)
+    # Get colors from image object
+    pixels = img.getcolors(width * height)
+    # Sort them by count number(first element of tuple)
+    sorted_pixels = sorted(pixels, key=lambda t: t[0])
+    # Get the most frequent color
+    dominant_color = sorted_pixels[-1][1]
+    return dominant_color
 
 
 def _get_image_variance(image):
@@ -206,7 +232,11 @@ def _get_image_variance(image):
 def autoCropImage(image):
     fixed_threshold = 5.0
     
+    before = time.time()
+    
     if ImageChops.invert(image).getbbox() is None:
+        if DEBUG:
+            print ' * autoCropImage => Using simpleCropImage because no bbox'
         image = simpleCropImage(image)
         return image
     
@@ -214,6 +244,8 @@ def autoCropImage(image):
     delta = 2
     diff = delta
     if _get_image_variance(image) < 2 * fixed_threshold:
+        if DEBUG:
+            print ' * autoCropImage => Image variance is already too small, give back image'
         return image
     
     while _get_image_variance(image.crop((0, height - diff, width, height))) < fixed_threshold and diff < height:
@@ -253,9 +285,28 @@ def autoCropImage(image):
     else:
         diff = pageNumberCut1
     
+    if DEBUG:
+        print ' * autoCropImage:: Computing crop diff to %s (in %.3f)' % (diff, time.time() - before)
+        image.save('tmp/1_before_crop.png')
+    
+    before = time.time()
     image = image.crop((0, 0, width, height - diff))
+    if DEBUG:
+        print ' * autoCropImage:: apply crop to %s (in %.3f)' % (diff, time.time() - before)
+        image.save('tmp/2_after_crop.png')
+    
+    before = time.time()
     image = simpleCropImage(image)
+    if DEBUG:
+        print ' * autoCropImage:: simple crop to %s in %.3f' % (image.size, time.time() - before)
+        image.save('tmp/3_after_simple_crop.png')
+    
+    before = time.time()
     image = BlurautoCropImage(image)
+    if DEBUG:
+        print ' * autoCropImage:: Blurauto %s in %.3f' % (image.size, time.time() - before)
+        image.save('tmp/4_after_auto_blur.png')
+    
     return image
 
 
@@ -297,6 +348,133 @@ def frameImage(image, foreground, background, size):
     return imageBg
 
 
+QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
+
+
+# Can be black is really black, or just VERY dark
+def is_quite_black(pixel):
+    if pixel == (0, 0, 0):
+        return True
+    if pixel[0] <= QUITE_BLACK_LIMIT and pixel[1] <= QUITE_BLACK_LIMIT and pixel[2] <= QUITE_BLACK_LIMIT:
+        return True
+    return False
+
+
+LINE_DEBUG = -1
+
+MIN_BOX_ALLOWED_HEIGHT = 36  # lower than this height, it's a bogus box
+
+HARD_MAX_BLOC_HEIGHT = 2400  # if higher than this, stop the bloc
+
+def splitWebtoon(image):
+    width, height = image.size
+    
+    # If we have a black background, good luck to split by white
+    most_color = _find_dominant_color(image)
+    is_black_background = most_color == (0, 0, 0)
+    
+    print " TOON: analysing image %s/%s  (is black background=%s)" % (width, height, is_black_background)
+    MIN_COLOR_HEIGHT = 30  # not less than 30px for an picture
+    MAX_BOX_HEIGHT = 1400  # if more than 1400, if possible, close box
+    pixels = image.load()  # this is not a list, nor is it list()'able
+    
+    lines = []
+    for y in range(height):
+        is_white = True
+        for x in range(width):
+            cpixel = pixels[x, y]
+            # If classic white bakground
+            if not is_black_background:
+                if cpixel != (255, 255, 255):
+                    is_white = False
+                    break
+            else:  # black background, do not look at black
+                if y == LINE_DEBUG:
+                    print "PIXEL: %s => %s" % (x, str(cpixel))
+                if not is_quite_black(cpixel) and not cpixel == (255, 255, 255):
+                    is_white = False
+                    break
+                # else:
+                #    print "Line %s is white" % y
+        if y == LINE_DEBUG:
+            print "%s IS WHITE LINE: %s" % (y, is_white)
+        lines.append((y, is_white))
+    
+    print "Number of white lines: %s" % (len([c for c in lines if c[1]]))
+    cut_boxes = []
+    start_of_box = None
+    in_box = False
+    last_black_line = None
+    for (y, is_white_line) in lines:
+        # First line: we are starting a box or not
+        if y == 0:
+            in_box = not is_white_line
+            if in_box:
+                start_of_box = y
+                last_black_line = y
+            continue
+
+        # Protect against TOO high page
+        
+        if in_box :
+            current_box_size = y - start_of_box
+            if current_box_size > HARD_MAX_BLOC_HEIGHT:
+                cut_boxes.append((start_of_box, y))
+                last_black_line = None
+                start_of_box = None
+                in_box = False
+                print "***"*20, "Protection"
+                continue
+
+        # we already start
+        # If black can continue a box or start a new one
+        if not is_white_line:
+            # we are a black line, so maybe we just continue the box
+            if in_box:
+                last_black_line = y
+                continue
+            # or we start a new one
+            else:
+                print ' - Starting a box at %s' % y
+                in_box = True
+                last_black_line = y
+                start_of_box = y
+                continue
+        # Is a white line, we can close the box
+        else:
+            if not in_box:
+                # TODO: do not allow a too big white part
+                continue
+            current_box_size = y - start_of_box
+            # print "WHITE: current box size detecte", current_box_size
+            # Close the box only if the last black if far ago
+            # Of if the box is very high
+            distance_from_last_black = y - last_black_line
+            if distance_from_last_black > MIN_COLOR_HEIGHT or current_box_size > MAX_BOX_HEIGHT:
+                cut_boxes.append((start_of_box, y))
+                last_black_line = None
+                start_of_box = None
+                in_box = False
+    
+    # We did finish, if we was in a box, close it
+    if in_box:
+        cut_boxes.append((start_of_box, last_black_line))
+    split_images = []
+    print " - Cut boxes: %s" % cut_boxes
+    for start_of_box, end_of_box in cut_boxes:
+        box_image = image.crop((0, start_of_box, width, end_of_box))
+        # TODO: TEST: if all pixels are black: drop
+        box_image_cropped = autoCropImage(box_image)
+        # Skip images that are too small (bugs in cut detection protection)
+        if box_image_cropped.size[1] <= MIN_BOX_ALLOWED_HEIGHT:
+            print "SKIP: image is too small to save"
+            continue
+        split_images.append(box_image_cropped)
+        print " Split size: %s" % str(box_image_cropped.size)
+    
+    return split_images
+
+
 def loadImage(source):
     try:
         return Image.open(source)
@@ -332,6 +510,25 @@ def convertImage(source, target, device, flags):
     image = loadImage(source)
     
     # Format according to palette
+    
+    # Webtoon is special, manually take order
+    if flags & ImageFlags.Webtoon:
+        converted_images = []  # we can have more than 1 results
+        images = splitWebtoon(image)
+        for image in images:
+            image = formatImage(image)
+            # if flags & ImageFlags.Orient:
+            #    image = orientImage(image, size)
+            if flags & ImageFlags.Resize:
+                image = resizeImage(image, size)
+            if flags & ImageFlags.Stretch:
+                image = stretchImage(image, size)
+            if flags & ImageFlags.Quantize:
+                image = quantizeImage(image, palette)
+            converted_images.append(image)
+        
+        return converted_images
+    
     image = formatImage(image)
     
     # Apply flag transforms
@@ -358,4 +555,4 @@ def convertImage(source, target, device, flags):
     if flags & ImageFlags.Quantize:
         image = quantizeImage(image, palette)
     
-    saveImage(image, target)
+    return [image]  # only one image if not webtoon

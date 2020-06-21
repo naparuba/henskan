@@ -47,6 +47,7 @@ class DialogOptions(QtGui.QDialog):
         self.checkboxQuantize.setChecked(self.book.imageFlags & ImageFlags.Quantize)
         self.checkboxFrame.setChecked(self.book.imageFlags & ImageFlags.Frame)
         self.checkboxAutoCrop.setChecked(self.book.imageFlags & ImageFlags.AutoCrop)
+        self.checkboxWebtoon.setChecked(self.book.imageFlags & ImageFlags.Webtoon)
     
     
     # Save parameters set on the dialogs to the book object if need
@@ -75,6 +76,9 @@ class DialogOptions(QtGui.QDialog):
             imageFlags |= ImageFlags.SplitLeftRight
         if self.checkboxAutoCrop.isChecked():
             imageFlags |= ImageFlags.AutoCrop
+        if self.checkboxWebtoon.isChecked():
+            imageFlags |= ImageFlags.Webtoon
+
         
         # If we did modified a value, update the book
         # and only if we did change something to not

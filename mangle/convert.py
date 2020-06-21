@@ -15,6 +15,7 @@
 
 
 import os
+import time
 import shutil
 from PyQt4 import QtGui, QtCore
 
@@ -69,11 +70,28 @@ class DialogConvert(QtGui.QProgressDialog):
     
     
     def convertAndSave(self, source, target, device, flags, archive, pdf):
-        image.convertImage(source, target, device, flags)
-        if archive is not None:
-            archive.addFile(target)
-        if pdf is not None:
-            pdf.addImage(target)
+        begin = time.time()
+        converted_images = image.convertImage(source, target, device, flags)
+        print "* convert for %s => %s" % (target, converted_images)
+        # If we have only one image, we can directly use the target
+        if len(converted_images) == 1:
+            image.saveImage(converted_images[0], target)
+            if archive is not None:
+                archive.addFile(target)
+            if pdf is not None:
+                pdf.addImage(target)
+        else:
+            print "* convert2 for %s => %s" % (target, converted_images)
+            base_target = target.replace('.png', '')
+            for (idx, converted_image) in enumerate(converted_images):
+                n_target = '%s_%04d.png' % (base_target, idx)
+                print "Want to saves %s with target: %s" % (converted_image, n_target)
+                image.saveImage(converted_image, n_target)
+                if archive is not None:
+                    archive.addFile(n_target)
+                if pdf is not None:
+                    pdf.addImage(n_target)
+        print " * Convert & save in %.3fs for %s" % (time.time() - begin, target)
     
     
     def onTimer(self):
