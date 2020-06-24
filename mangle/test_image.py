@@ -15,29 +15,6 @@ if not os.path.exists(IMG1_PATH):
     sys.exit(2)
 
 
-WEBTOON2_PATH = os.path.join(my_dir, 'resources', 'webtoon_2.jpg')
-if not os.path.exists(WEBTOON2_PATH):
-    print "ERROR: no webtoon2 to test"
-    sys.exit(2)
-
-
-WEBTOON3_PATH = os.path.join(my_dir, 'resources', 'webtoon_3.jpg')
-if not os.path.exists(WEBTOON3_PATH):
-    print "ERROR: no webtoon3 to test"
-    sys.exit(2)
-
-
-WEBTOON4_PATH = os.path.join(my_dir, 'resources', 'webtoon_4.jpg')
-if not os.path.exists(WEBTOON4_PATH):
-    print "ERROR: no webtoon4 to test"
-    sys.exit(2)
-
-
-WEBTOON5_PATH = os.path.join(my_dir, 'resources', 'webtoon_5.jpg')
-if not os.path.exists(WEBTOON5_PATH):
-    print "ERROR: no webtoon5 to test"
-    sys.exit(2)
-
 
 # Clean all tmp
 TMP_DIR = os.path.join(my_dir, 'tmp')
@@ -73,7 +50,7 @@ def parse_webtoon(number):
     print " ======== WEBTOON %s ========" % number
     source = WEBTOON_PATH
     target = os.path.join(TMP_DIR, 'webtoon_%s.jpg' % number)
-    flags = image.ImageFlags.AutoCrop | image.ImageFlags.Resize | image.ImageFlags.Quantize | image.ImageFlags.Webtoon
+    flags = image.ImageFlags.AutoCrop | image.ImageFlags.Quantize | image.ImageFlags.Webtoon  # | image.ImageFlags.Resize
     
     img = Image.open(source)
     print "VARIANCE %s" % number, ImageStat.Stat(img).var
@@ -93,6 +70,7 @@ parse_webtoon(3)
 parse_webtoon(4)
 parse_webtoon(5)
 parse_webtoon(6)
+parse_webtoon(7)
 
 
 # Test normal image

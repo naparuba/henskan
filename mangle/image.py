@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import time
+from math import ceil
 
 DEBUG = False
 
@@ -246,6 +247,7 @@ def autoCropImage(image):
     if _get_image_variance(image) < 2 * fixed_threshold:
         if DEBUG:
             print ' * autoCropImage => Image variance is already too small, give back image'
+        image = simpleCropImage(image)
         return image
     
     while _get_image_variance(image.crop((0, height - diff, width, height))) < fixed_threshold and diff < height:
@@ -364,9 +366,160 @@ LINE_DEBUG = -1
 
 MIN_BOX_ALLOWED_HEIGHT = 36  # lower than this height, it's a bogus box
 
-HARD_MAX_BLOC_HEIGHT = 2400  # if higher than this, stop the bloc
+SOFT_MAX_BLOC_HEIGHT = 1500  # if higher than this, try to split into parts again
+
+HARD_MAX_BLOC_HEIGHT = 3000  # if higher than this, stop the block
+
+
+def __get_image_height(image):
+    return image.size[1]
+
+
+def __get_image_width(image):
+    return image.size[0]
+
+
+WHITE_PIXEL = (255, 255, 255)
+
+
+def __fail_back_to_cut_very_big_one(image):
+    image_height = __get_image_height(image)
+    image_width = __get_image_width(image)
+    print "__fail_back_to_cut_very_big_one:: %s" % image_height
+    if image_height <= HARD_MAX_BLOC_HEIGHT:
+        return [image]
+    
+    hard_split_images = []
+    nb_images = int(ceil(float(image_height) / HARD_MAX_BLOC_HEIGHT))
+    
+    for idx in xrange(nb_images):
+        hard_split = image.crop((0, idx * HARD_MAX_BLOC_HEIGHT, image_width, (idx + 1) * HARD_MAX_BLOC_HEIGHT))
+        hard_split_images.append(hard_split)
+    print "__fail_back_to_cut_very_big_one:: cut into %s parts" % len(hard_split_images)
+    return hard_split_images
+
+
+# We have a block image that is too big, try to see if with linear cut it's possible to
+# have more parts
+def __try_to_smart_split_block(image, is_black_background):
+    image = simpleCropImage(image)
+    image_height = __get_image_height(image)
+    image_width = __get_image_width(image)
+    print " === Try to smart split block of size %s / %s  (mostly black=%s)" % (image_height, image_width, is_black_background)
+    
+    # Maybe the image is now too small: just give it back :)
+    if image_height <= 200:
+        return [image]
+    
+    split_pixel = WHITE_PIXEL if not is_black_background else (0, 0, 0)
+    print " ==== Finding for pixel: %s" % str(split_pixel)
+    pixels = image.load()
+    for y in range(200, image_height, 10):  # do not try to cut too early, it's useless
+        pixel = pixels[0, y]
+        if pixel == split_pixel:
+            if y == 1830:
+                print " ==== Founded at line %s" % y
+            for angle_int in range(0, 200):
+                angle = float(angle_int) / 100
+                line_is_valid = True
+                for x in xrange(image_width):
+                    tested_pixel_y = y - ceil(x * angle)
+                    if tested_pixel_y <= 0:
+                        line_is_valid = False
+                        break
+                    # print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
+                    tested_pixel = pixels[x, tested_pixel_y]
+                    if tested_pixel != split_pixel:
+                        if y == 1830:
+                            print "[Y=%s Angle=%s] Line is not valid at x=%s y=%s (color=%s)" % (y, angle, x, tested_pixel_y, str(tested_pixel))
+                        line_is_valid = False
+                        break
+                
+                if line_is_valid:
+                    print "Yeah, we can cut from %s with angle %s" % (y, angle)
+                    
+                    split_pixels = {}
+                    for x in xrange(image_width):
+                        split_pixels[x] = y - int(ceil(x * angle))
+                    lower_y = min(split_pixels.values())
+                    higher_y = max(split_pixels.values())
+                    
+                    # print "SPLIT PIXELS", split_pixels
+                    
+                    # We will have 2 images:
+                    # * higher part that will erase all UNDER the line
+                    # * lower part that will erase all TOP the line
+                    higher_part_image = image.copy()
+                    higher_part_pixels = higher_part_image.load()
+                    rest_to_split_image = image.copy()
+                    rest_to_split_pixels = rest_to_split_image.load()
+                    
+                    # For debug:
+                    for x in xrange(image_width):
+                        tested_pixel_y = y - ceil(x * angle)
+                        # print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
+                        pixels[x, tested_pixel_y] = (255, 0, 0)
+                    image.save('tmp/with_line.jpg')
+                    
+                    print "SPLIT RANGE", lower_y, higher_y
+                    # HIGHER PART: clean all BELOW the line
+                    for y in xrange(lower_y, higher_y):
+                        for x in xrange(image_width):
+                            line_y = split_pixels[x]
+                            if y > higher_y or y > line_y:
+                                higher_part_pixels[x, y] = WHITE_PIXEL
+                    
+                    # We must crop it to remove all useless part
+                    higher_part_image = higher_part_image.crop((0, 0, image_width, higher_y))
+                    higher_part_image.save('tmp/higher_part.jpg')
+                    
+                    # LOWER PART: clean all OVER the line
+                    for y in xrange(lower_y, higher_y):
+                        for x in xrange(image_width):
+                            line_y = split_pixels[x]
+                            if y < lower_y or y < line_y:
+                                rest_to_split_pixels[x, y] = WHITE_PIXEL
+                    
+                    rest_to_split_image = rest_to_split_image.crop((0, lower_y, image_width, image_height))
+                    
+                    rest_to_split_image.save('tmp/rest.jpg')
+                    
+                    res = [higher_part_image]
+                    
+                    rest_image_splitted = __try_to_smart_split_block(rest_to_split_image, is_black_background)
+                    res.extend(rest_image_splitted)
+                    
+                    return res
+    
+    # We did failed to split it so give back the original image
+    print "did fail to smart split the image, still %s high" % image_height
+    fail_back_images = __fail_back_to_cut_very_big_one(image)
+    return fail_back_images
+
+
+def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_images, is_black_background):
+    box_image = image.crop((0, start_of_box, width, end_of_box))
+    
+    potential_images = [box_image]
+    # Maybe it's too high
+    img_height = __get_image_height(box_image)
+    if img_height >= SOFT_MAX_BLOC_HEIGHT:
+        print " *** WebToon block is too high (%s), trying to split it again" % img_height
+        potential_images = __try_to_smart_split_block(box_image, is_black_background)
+    
+    for p_image in potential_images:
+        # TODO: TEST: if all pixels are black: drop
+        image_cropped = autoCropImage(p_image)
+        # Skip images that are too small (bugs in cut detection protection)
+        if __get_image_height(image_cropped) <= MIN_BOX_ALLOWED_HEIGHT:
+            print "SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped)
+            continue
+        print " Split size: %s" % str(image_cropped.size)
+        split_final_images.append(image_cropped)
+
 
 def splitWebtoon(image):
+    split_images = []
     width, height = image.size
     
     # If we have a black background, good luck to split by white
@@ -383,15 +536,15 @@ def splitWebtoon(image):
         is_white = True
         for x in range(width):
             cpixel = pixels[x, y]
-            # If classic white bakground
+            # If classic white background
             if not is_black_background:
-                if cpixel != (255, 255, 255):
+                if cpixel != WHITE_PIXEL:
                     is_white = False
                     break
             else:  # black background, do not look at black
                 if y == LINE_DEBUG:
                     print "PIXEL: %s => %s" % (x, str(cpixel))
-                if not is_quite_black(cpixel) and not cpixel == (255, 255, 255):
+                if not is_quite_black(cpixel) and not cpixel == WHITE_PIXEL:
                     is_white = False
                     break
                 # else:
@@ -401,7 +554,7 @@ def splitWebtoon(image):
         lines.append((y, is_white))
     
     print "Number of white lines: %s" % (len([c for c in lines if c[1]]))
-    cut_boxes = []
+    
     start_of_box = None
     in_box = False
     last_black_line = None
@@ -413,19 +566,17 @@ def splitWebtoon(image):
                 start_of_box = y
                 last_black_line = y
             continue
-
-        # Protect against TOO high page
         
-        if in_box :
+        if in_box and False:
             current_box_size = y - start_of_box
             if current_box_size > HARD_MAX_BLOC_HEIGHT:
-                cut_boxes.append((start_of_box, y))
+                __parse_webtoon_block(image, start_of_box, width, y, split_images, is_black_background)
                 last_black_line = None
                 start_of_box = None
                 in_box = False
-                print "***"*20, "Protection"
+                print "***" * 20, "Protection, split at", current_box_size
                 continue
-
+        
         # we already start
         # If black can continue a box or start a new one
         if not is_white_line:
@@ -451,26 +602,14 @@ def splitWebtoon(image):
             # Of if the box is very high
             distance_from_last_black = y - last_black_line
             if distance_from_last_black > MIN_COLOR_HEIGHT or current_box_size > MAX_BOX_HEIGHT:
-                cut_boxes.append((start_of_box, y))
+                __parse_webtoon_block(image, start_of_box, width, y, split_images, is_black_background)
                 last_black_line = None
                 start_of_box = None
                 in_box = False
     
     # We did finish, if we was in a box, close it
     if in_box:
-        cut_boxes.append((start_of_box, last_black_line))
-    split_images = []
-    print " - Cut boxes: %s" % cut_boxes
-    for start_of_box, end_of_box in cut_boxes:
-        box_image = image.crop((0, start_of_box, width, end_of_box))
-        # TODO: TEST: if all pixels are black: drop
-        box_image_cropped = autoCropImage(box_image)
-        # Skip images that are too small (bugs in cut detection protection)
-        if box_image_cropped.size[1] <= MIN_BOX_ALLOWED_HEIGHT:
-            print "SKIP: image is too small to save"
-            continue
-        split_images.append(box_image_cropped)
-        print " Split size: %s" % str(box_image_cropped.size)
+        __parse_webtoon_block(image, start_of_box, width, last_black_line, split_images, is_black_background)
     
     return split_images
 
