@@ -71,6 +71,7 @@ parse_webtoon(4)
 parse_webtoon(5)
 parse_webtoon(6)
 parse_webtoon(7)
+parse_webtoon(8)
 
 
 # Test normal image

@@ -25,6 +25,8 @@ def set_debug():
 
 from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
 
+from similarity import similarity
+
 
 class ImageFlags:
     Orient = 1 << 0
@@ -354,12 +356,26 @@ QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
 
 
 # Can be black is really black, or just VERY dark
-def is_quite_black(pixel):
+def is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
     if pixel == (0, 0, 0):
         return True
-    if pixel[0] <= QUITE_BLACK_LIMIT and pixel[1] <= QUITE_BLACK_LIMIT and pixel[2] <= QUITE_BLACK_LIMIT:
+    if pixel[0] <= precision and pixel[1] <= precision and pixel[2] <= precision:
         return True
     return False
+
+
+def is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
+    if pixel == (255, 255, 255):
+        return True
+    if pixel[0] >= 255 - precision and pixel[1] >= 255 - precision and pixel[2] >= 255 - precision:
+        return True
+    return False
+
+
+def is_background_pixel(pixel, is_black_background):
+    if is_black_background:
+        return is_quite_black(pixel, precision=10)
+    return is_quite_white(pixel, precision=10)
 
 
 LINE_DEBUG = -1
@@ -382,6 +398,37 @@ def __get_image_width(image):
 WHITE_PIXEL = (255, 255, 255)
 
 
+# Remove images that are full white or full black
+def is_full_background_image(image):
+    image_rgb = image.convert('RGB')
+    height = __get_image_height(image)
+    width = __get_image_width(image)
+    pixels = image_rgb.load()
+    start_pixel = pixels[0, 0]
+    is_white = is_quite_white(start_pixel, precision=1)
+    is_black = is_quite_black(start_pixel, precision=1)
+    if is_white:
+        for x in xrange(width):
+            for y in xrange(height):
+                pixel = pixels[x, y]
+                if not is_quite_white(pixel, precision=1):
+                    return False
+        # all was white
+        return True
+    if is_black:
+        for x in xrange(width):
+            for y in xrange(height):
+                pixel = pixels[x,y]
+                if not is_quite_black(pixel, precision=1):
+                    return False
+        # all was black
+        return True
+    
+    # First pixel was not white or black
+    return False
+    
+
+
 def __fail_back_to_cut_very_big_one(image):
     image_height = __get_image_height(image)
     image_width = __get_image_width(image)
@@ -401,11 +448,13 @@ def __fail_back_to_cut_very_big_one(image):
 
 # We have a block image that is too big, try to see if with linear cut it's possible to
 # have more parts
-def __try_to_smart_split_block(image, is_black_background):
+def __try_to_smart_split_block(image, is_black_background, level=1):
     image = simpleCropImage(image)
+    if DEBUG:
+        image.save('tmp/input_%s.jpg' % level)
     image_height = __get_image_height(image)
     image_width = __get_image_width(image)
-    print " === Try to smart split block of size %s / %s  (mostly black=%s)" % (image_height, image_width, is_black_background)
+    print " === [LEVEL=%s] Try to smart split block of size %s / %s  (mostly black=%s)" % (level, image_height, image_width, is_black_background)
     
     # Maybe the image is now too small: just give it back :)
     if image_height <= 200:
@@ -414,85 +463,140 @@ def __try_to_smart_split_block(image, is_black_background):
     split_pixel = WHITE_PIXEL if not is_black_background else (0, 0, 0)
     print " ==== Finding for pixel: %s" % str(split_pixel)
     pixels = image.load()
-    for y in range(200, image_height, 10):  # do not try to cut too early, it's useless
+    for y in range(500, image_height - 200, 10):  # do not try to cut too early, it's useless
+        # First look if the left => higher right is possible for split
+        line_is_valid = False
+        found_angle = None
+        from_left = True
         pixel = pixels[0, y]
-        if pixel == split_pixel:
-            if y == 1830:
-                print " ==== Founded at line %s" % y
+        if is_background_pixel(pixel, is_black_background):
+            # if y == 2310:
+            #     print " ==== Founded good start pixel at line %s" % y
             for angle_int in range(0, 200):
                 angle = float(angle_int) / 100
+                found_angle = angle
                 line_is_valid = True
                 for x in xrange(image_width):
                     tested_pixel_y = y - ceil(x * angle)
                     if tested_pixel_y <= 0:
                         line_is_valid = False
                         break
-                    # print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
+                    # if y == 2310 and angle_int == 58:
+                    #    print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
                     tested_pixel = pixels[x, tested_pixel_y]
-                    if tested_pixel != split_pixel:
-                        if y == 1830:
-                            print "[Y=%s Angle=%s] Line is not valid at x=%s y=%s (color=%s)" % (y, angle, x, tested_pixel_y, str(tested_pixel))
+                    # if y == 2310 and angle_int == 58:
+                    #    pixels[x, tested_pixel_y] = (255, 0, 0)
+                    if not is_background_pixel(tested_pixel, is_black_background):
+                        # if y == 2310:
+                        #     print "LEFT: [Y=%s Angle=%s] Line is not valid at x=%s y=%s (color=%s)" % (y, angle, x, tested_pixel_y, str(tested_pixel))
+                        #     if angle_int == 58:
+                        #         image.save('tmp/with_line2.jpg')
+                        #         #fuck
                         line_is_valid = False
                         break
-                
+                # We did found a valid split line
                 if line_is_valid:
-                    print "Yeah, we can cut from %s with angle %s" % (y, angle)
+                    break
+            if line_is_valid:
+                print "LEFT:: found a valid split line, angle=%s y=%s" % (found_angle, y)
+        
+        # Then is the line is not found look if the right => higher left is possible for split
+        if not line_is_valid and pixels[image_width - 1, y] == split_pixel:
+            from_left = False
+            for angle_int in range(0, 200):
+                angle = float(angle_int) / 100
+                found_angle = angle
+                line_is_valid = True
+                
+                for x in xrange(image_width - 1, -1, -1):
+                    tested_pixel_y = y - int(ceil((image_width - x) * angle))
+                    if tested_pixel_y <= 0:
+                        line_is_valid = False
+                        break
                     
-                    split_pixels = {}
-                    for x in xrange(image_width):
-                        split_pixels[x] = y - int(ceil(x * angle))
-                    lower_y = min(split_pixels.values())
-                    higher_y = max(split_pixels.values())
-                    
-                    # print "SPLIT PIXELS", split_pixels
-                    
-                    # We will have 2 images:
-                    # * higher part that will erase all UNDER the line
-                    # * lower part that will erase all TOP the line
-                    higher_part_image = image.copy()
-                    higher_part_pixels = higher_part_image.load()
-                    rest_to_split_image = image.copy()
-                    rest_to_split_pixels = rest_to_split_image.load()
-                    
-                    # For debug:
-                    for x in xrange(image_width):
-                        tested_pixel_y = y - ceil(x * angle)
-                        # print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
-                        pixels[x, tested_pixel_y] = (255, 0, 0)
-                    image.save('tmp/with_line.jpg')
-                    
-                    print "SPLIT RANGE", lower_y, higher_y
-                    # HIGHER PART: clean all BELOW the line
-                    for y in xrange(lower_y, higher_y):
-                        for x in xrange(image_width):
-                            line_y = split_pixels[x]
-                            if y > higher_y or y > line_y:
-                                higher_part_pixels[x, y] = WHITE_PIXEL
-                    
-                    # We must crop it to remove all useless part
-                    higher_part_image = higher_part_image.crop((0, 0, image_width, higher_y))
-                    higher_part_image.save('tmp/higher_part.jpg')
-                    
-                    # LOWER PART: clean all OVER the line
-                    for y in xrange(lower_y, higher_y):
-                        for x in xrange(image_width):
-                            line_y = split_pixels[x]
-                            if y < lower_y or y < line_y:
-                                rest_to_split_pixels[x, y] = WHITE_PIXEL
-                    
-                    rest_to_split_image = rest_to_split_image.crop((0, lower_y, image_width, image_height))
-                    
-                    rest_to_split_image.save('tmp/rest.jpg')
-                    
-                    res = [higher_part_image]
-                    
-                    rest_image_splitted = __try_to_smart_split_block(rest_to_split_image, is_black_background)
-                    res.extend(rest_image_splitted)
-                    
-                    return res
+                    tested_pixel = pixels[x, tested_pixel_y]
+                    if not is_background_pixel(tested_pixel, is_black_background):
+                        line_is_valid = False
+                        break
+                # We did found a valid split line
+                if line_is_valid:
+                    # print "[RIGHT] Line %s is splitable with angle=%s" % (y, found_angle)
+                    break
+        
+        # Maybe nor left or right was able to split, skip this line
+        if not line_is_valid:
+            continue
+        
+        print "Yeah, we can cut from %s with angle %s and from left:%s" % (y, found_angle, from_left)
+        
+        split_pixels = {}
+        if from_left:
+            for x in xrange(image_width):
+                split_pixels[x] = y - int(ceil(x * found_angle))
+        else:
+            for x in xrange(image_width - 1, -1, -1):
+                split_pixels[x] = y - int(ceil((image_width - x) * found_angle))
+        lower_y = min(split_pixels.values())
+        higher_y = max(split_pixels.values())
+        
+        # We will have 2 images:
+        # * higher part that will erase all UNDER the line
+        # * lower part that will erase all TOP the line
+        higher_part_image = image.copy()
+        higher_part_pixels = higher_part_image.load()
+        rest_to_split_image = image.copy()
+        rest_to_split_pixels = rest_to_split_image.load()
+        
+        # For debug:
+        if DEBUG:
+            if from_left:
+                for x in xrange(image_width):
+                    tested_pixel_y = y - ceil(x * found_angle)
+                    # print " ====== LEFT [Y=%s Angle=%s] SPLIT LINE WAS Testing pixel %s / %s :: %s" % (y, found_angle, x, tested_pixel_y, str(pixels[x, tested_pixel_y]))
+                    pixels[x, tested_pixel_y] = (255, 0, 0)
+            else:
+                for x in xrange(image_width - 1, -1, -1):
+                    tested_pixel_y = y - int(ceil((image_width - x) * found_angle))
+                    # print " ====== RIGHT [Y=%s Angle=%s] SPLIT LINE WAS Testing pixel %s / %s :: %s" % (y, found_angle, x, tested_pixel_y, str(pixels[x, tested_pixel_y]))
+                    pixels[x, tested_pixel_y] = (255, 0, 0)
+        
+        if DEBUG:
+            image.save('tmp/with_line_%s.jpg' % level)
+            print "SPLIT RANGE", lower_y, higher_y
+        
+        # HIGHER PART: clean all BELOW the line
+        for y in xrange(lower_y, higher_y):
+            for x in xrange(image_width):
+                line_y = split_pixels[x]
+                if y > higher_y or y > line_y:
+                    higher_part_pixels[x, y] = WHITE_PIXEL
+        
+        # We must crop it to remove all useless part
+        higher_part_image = higher_part_image.crop((0, 0, image_width, higher_y))
+        if DEBUG:
+            higher_part_image.save('tmp/higher_part_%s.jpg' % level)
+        
+        # LOWER PART: clean all OVER the line
+        for y in xrange(lower_y, higher_y):
+            for x in xrange(image_width):
+                line_y = split_pixels[x]
+                if y < lower_y or y < line_y:
+                    rest_to_split_pixels[x, y] = WHITE_PIXEL
+        
+        rest_to_split_image = rest_to_split_image.crop((0, lower_y, image_width, image_height))
+        if DEBUG:
+            rest_to_split_image.save('tmp/rest_%s.jpg' % level)
+        
+        res = [higher_part_image]
+        
+        rest_image_splitted = __try_to_smart_split_block(rest_to_split_image, is_black_background, level=level + 1)
+        res.extend(rest_image_splitted)
+        
+        return res
     
     # We did failed to split it so give back the original image
     print "did fail to smart split the image, still %s high" % image_height
+    # fuck
     fail_back_images = __fail_back_to_cut_very_big_one(image)
     return fail_back_images
 
@@ -505,7 +609,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
     img_height = __get_image_height(box_image)
     if img_height >= SOFT_MAX_BLOC_HEIGHT:
         print " *** WebToon block is too high (%s), trying to split it again" % img_height
-        potential_images = __try_to_smart_split_block(box_image, is_black_background)
+        potential_images = __try_to_smart_split_block(box_image, is_black_background, level=0)
     
     for p_image in potential_images:
         # TODO: TEST: if all pixels are black: drop
@@ -513,6 +617,12 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
         # Skip images that are too small (bugs in cut detection protection)
         if __get_image_height(image_cropped) <= MIN_BOX_ALLOWED_HEIGHT:
             print "SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped)
+            continue
+        if not similarity.is_valid_image(image_cropped):
+            print " ** DROPPING IMAGE"
+            continue
+        if is_full_background_image(image_cropped):
+            print " ** Dropping full white/black image"
             continue
         print " Split size: %s" % str(image_cropped.size)
         split_final_images.append(image_cropped)
