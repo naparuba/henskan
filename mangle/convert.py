@@ -72,7 +72,10 @@ class DialogConvert(QtGui.QProgressDialog):
     def convertAndSave(self, source, target, device, flags, archive, pdf):
         begin = time.time()
         converted_images = image.convertImage(source, target, device, flags)
-        print "* convert for %s => %s" % (target, converted_images)
+        try:
+            print "* convert for %s => %s" % (target, converted_images)
+        except LookupError:  # bad encoding?
+            pass
         # If we have only one image, we can directly use the target
         if len(converted_images) == 1:
             image.saveImage(converted_images[0], target)
@@ -91,7 +94,10 @@ class DialogConvert(QtGui.QProgressDialog):
                     archive.addFile(n_target)
                 if pdf is not None:
                     pdf.addImage(n_target)
-        print " * Convert & save in %.3fs for %s" % (time.time() - begin, target)
+        try:
+            print " * Convert & save in %.3fs for %s" % (time.time() - begin, target)
+        except LookupError:  # bad encoding
+            pass
     
     
     def onTimer(self):
