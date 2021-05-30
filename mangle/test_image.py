@@ -60,18 +60,20 @@ def parse_webtoon(number):
     split_images = image.convertImage(source, target, DEVICE, flags)
     for (idx, split_image) in enumerate(split_images):
         pth = os.path.join(TMP_DIR, 'toon%s_%d.png' % (number, idx))
+        print '  - saving image %s' % pth
         split_image.save(pth)
     print '  - Done in %s' % target
 
 
-parse_webtoon(1)
-parse_webtoon(2)
-parse_webtoon(3)
-parse_webtoon(4)
-parse_webtoon(5)
-parse_webtoon(6)
-parse_webtoon(7)
-parse_webtoon(8)
+# parse_webtoon(1)
+# parse_webtoon(2)
+# parse_webtoon(3)
+# parse_webtoon(4)
+# parse_webtoon(5)
+# parse_webtoon(6)
+# parse_webtoon(7)
+# parse_webtoon(8)
+parse_webtoon(9)
 
 
 # Test normal image

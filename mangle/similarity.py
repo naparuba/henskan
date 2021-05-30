@@ -47,6 +47,14 @@ class Similarity(object):
         print "   - %s hashed loaded in %.3fs" % (len(self._unwanted_hashes), time.time() - t0)
     
     
+    def add_deleted_image(self, f_path, image, diff, do_move):
+        self._nb_deleted += 1
+        print " * Image is unwanted (from %s), deleted=%s" % (f_path, self._nb_deleted)
+        save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
+        if do_move:
+            image.save(save_deleted_path)
+        
+    
     def is_valid_image(self, image, do_move=True):
         if imagehash is None:
             print "ERROR: cannot compare unwanted image"
@@ -58,11 +66,12 @@ class Similarity(object):
         for (f_path, ref_hash) in self._unwanted_hashes.iteritems():
             diff = hash - ref_hash
             if diff <= THRESHOLD:
-                self._nb_deleted += 1
-                print " * Image is unwanted (from %s), deleted=%s" % (f_path, self._nb_deleted)
-                save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
-                if do_move:
-                    image.save(save_deleted_path)
+                self.add_deleted_image(f_path, image, diff, do_move=do_move)
+                # self._nb_deleted += 1
+                # print " * Image is unwanted (from %s), deleted=%s" % (f_path, self._nb_deleted)
+                # save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
+                # if do_move:
+                #     image.save(save_deleted_path)
                 is_valid = False
                 break
         self._sum_time += (time.time() - t0)
