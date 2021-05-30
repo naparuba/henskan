@@ -22,9 +22,10 @@ from PyQt4 import QtGui
 
 from mangle.book import MainWindowBook
 
-
 application = QtGui.QApplication(sys.argv)
+
 filename = sys.argv[1] if len(sys.argv) > 1 else None
 window = MainWindowBook(filename)
 window.show()
+
 application.exec_()

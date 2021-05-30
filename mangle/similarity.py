@@ -1,7 +1,7 @@
 import time
 
 try:
-    import imagehash
+    from imagehash import imagehash
 except ImportError:
     imagehash = None
     print "Missing imagehash lib"
@@ -10,6 +10,16 @@ from image import Image
 
 UNWANTED = r'C:\Users\j.gabes\Desktop\export\unwanted'
 DELETED = r'C:\Users\j.gabes\Desktop\export\deleted'
+
+# Mine are for debug, on other pc, use documents ones
+if not os.path.exists(UNWANTED):
+    UNWANTED = os.path.expanduser('~/Documents/mangle_unwanted')
+    if not os.path.exists(UNWANTED):
+        os.mkdir(UNWANTED)
+if not os.path.exists(DELETED):
+    DELETED = os.path.expanduser('~/Documents/mangle_deleted')
+    if not os.path.exists(DELETED):
+        os.mkdir(DELETED)
 
 THRESHOLD = 6
 
@@ -53,7 +63,7 @@ class Similarity(object):
         save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
         if do_move:
             image.save(save_deleted_path)
-        
+    
     
     def is_valid_image(self, image, do_move=True):
         if imagehash is None:
