@@ -69,6 +69,12 @@ from source.
 *  [mangle_win.zip](https://foosoft.net/projects/mangle/dl/mangle_win.zip)
 *  [mangle_osx.zip](https://foosoft.net/projects/mangle/dl/mangle_osx.zip) (quite old)
 
+## Building for Windows ##
+
+On windows you can build with the command:
+
+    pyinstaller.exe  --name mangle -y --add-binary "mangle/ui;mangle/ui" --add-binary "mangle/img;mangle/img" --add-binary "mangle/resources;mangle/resources" --clean --win-private-assemblies -d all main.py
+
 ## Screenshots ##
 
 [![Main window](https://foosoft.net/projects/mangle/img/main-thumb.png)](https://foosoft.net/projects/mangle/img/main.png)
