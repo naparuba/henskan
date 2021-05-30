@@ -99,6 +99,7 @@ class KindleData:
         'Kobo Aura'                       : ((758, 1024), Palette15b),
         'Kobo Aura HD'                    : ((1080, 1440), Palette15b),
         'Kobo Aura H2O'                   : ((1080, 1430), Palette15a),
+        'Kobo Libra H2O'                  : ((1264, 1680), Palette15a),
     }
 
 
@@ -400,18 +401,23 @@ WHITE_PIXEL = (255, 255, 255)
 
 # Remove images that are full white or full black
 def is_full_background_image(image):
+    precision = 5
     image_rgb = image.convert('RGB')
     height = __get_image_height(image)
     width = __get_image_width(image)
     pixels = image_rgb.load()
     start_pixel = pixels[0, 0]
-    is_white = is_quite_white(start_pixel, precision=1)
-    is_black = is_quite_black(start_pixel, precision=1)
+    is_white = is_quite_white(start_pixel, precision=precision)
+    is_black = is_quite_black(start_pixel, precision=precision)
+    if DEBUG:
+        print '  is_full_background_image:: white=%s   black=%s' % (is_white, is_black)
     if is_white:
         for x in xrange(width):
             for y in xrange(height):
                 pixel = pixels[x, y]
-                if not is_quite_white(pixel, precision=1):
+                if not is_quite_white(pixel, precision=precision):
+                    if DEBUG:
+                        print '    is_full_background_image:: the pixel %s/%s is not white %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2])
                     return False
         # all was white
         return True
@@ -419,7 +425,9 @@ def is_full_background_image(image):
         for x in xrange(width):
             for y in xrange(height):
                 pixel = pixels[x,y]
-                if not is_quite_black(pixel, precision=1):
+                if not is_quite_black(pixel, precision=precision):
+                    if DEBUG:
+                        print '    is_full_background_image:: the pixel %s/%s is not black %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2])
                     return False
         # all was black
         return True
@@ -614,6 +622,17 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
     for p_image in potential_images:
         # TODO: TEST: if all pixels are black: drop
         image_cropped = autoCropImage(p_image)
+        print '  ** image cropped size: %s' % str(image_cropped.size)
+        try:
+            variance = _get_image_variance(image_cropped)
+        except ZeroDivisionError:  # seems that the image is too small, let the real test look for it
+            print '   ** Image seems to have issue, skipping variance check'
+            variance = 999  # do not delete it
+            
+        if variance < 1:  # mostly the same color, skip it
+            similarity.add_deleted_image('too_low_variance', image_cropped, 'variance_%.2f' % variance, do_move=True)
+            print '  ** SKIP image cropped variance: %s is too small' % str(variance)
+            continue
         # Skip images that are too small (bugs in cut detection protection)
         if __get_image_height(image_cropped) <= MIN_BOX_ALLOWED_HEIGHT:
             print "SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped)
@@ -623,6 +642,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
             continue
         if is_full_background_image(image_cropped):
             print " ** Dropping full white/black image"
+            similarity.add_deleted_image('too_white', image_cropped, 0, do_move=True)
             continue
         print " Split size: %s" % str(image_cropped.size)
         split_final_images.append(image_cropped)
