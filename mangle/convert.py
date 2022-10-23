@@ -18,11 +18,13 @@ import os
 import time
 import shutil
 from PyQt4 import QtGui, QtCore
+import traceback
 
 from image import ImageFlags
 import cbz
 import image
 import pdfimage
+
 
 
 class DialogConvert(QtGui.QProgressDialog):
@@ -78,7 +80,11 @@ class DialogConvert(QtGui.QProgressDialog):
             pass
         # If we have only one image, we can directly use the target
         if len(converted_images) == 1:
-            image.saveImage(converted_images[0], target)
+            try:
+                image.saveImage(converted_images[0], target)
+            except:
+                print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
+                return
             if archive is not None:
                 archive.addFile(target)
             if pdf is not None:
@@ -89,7 +95,11 @@ class DialogConvert(QtGui.QProgressDialog):
             for (idx, converted_image) in enumerate(converted_images):
                 n_target = '%s_%04d.png' % (base_target, idx)
                 print "Want to saves %s with target: %s" % (converted_image, n_target)
-                image.saveImage(converted_image, n_target)
+                try:
+                    image.saveImage(converted_image, n_target)
+                except:
+                    print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
+                    return
                 if archive is not None:
                     archive.addFile(n_target)
                 if pdf is not None:
