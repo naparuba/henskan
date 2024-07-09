@@ -25,8 +25,6 @@ def set_debug():
 
 from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
 
-from similarity import similarity
-
 
 class ImageFlags:
     Orient = 1 << 0
@@ -87,19 +85,20 @@ class KindleData:
     ]
     
     Profiles = {
-        'Kindle 1'                        : ((600, 800), Palette4),
-        'Kindle 2/3/Touch'                : ((600, 800), Palette15a),
-        'Kindle 4 & 5'                    : ((600, 800), Palette15b),
-        'Kindle DX/DXG'                   : ((824, 1200), Palette15a),
-        'Kindle Paperwhite 1 & 2'         : ((758, 1024), Palette15b),
+        'Kindle 1':                         ((600, 800), Palette4),
+        'Kindle 2/3/Touch':                 ((600, 800), Palette15a),
+        'Kindle 4 & 5':                     ((600, 800), Palette15b),
+        'Kindle DX/DXG':                    ((824, 1200), Palette15a),
+        'Kindle Paperwhite 1 & 2':          ((758, 1024), Palette15b),
         'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette15b),
-        'Kobo Mini/Touch'                 : ((600, 800), Palette15b),
-        'Kobo Glo'                        : ((768, 1024), Palette15b),
-        'Kobo Glo HD'                     : ((1072, 1448), Palette15b),
-        'Kobo Aura'                       : ((758, 1024), Palette15b),
-        'Kobo Aura HD'                    : ((1080, 1440), Palette15b),
-        'Kobo Aura H2O'                   : ((1080, 1430), Palette15a),
-        'Kobo Libra H2O'                  : ((1264, 1680), Palette15a),
+        'Kobo Mini/Touch':                  ((600, 800), Palette15b),
+        'Kobo Glo':                         ((768, 1024), Palette15b),
+        'Kobo Glo HD':                      ((1072, 1448), Palette15b),
+        'Kobo Aura':                        ((758, 1024), Palette15b),
+        'Kobo Aura HD':                     ((1080, 1440), Palette15b),
+        'Kobo Aura H2O':                    ((1080, 1430), Palette15a),
+        'Kobo Libra H2O':                   ((1264, 1680), Palette15a),
+        'Kobo Elipsa 2E':                   ((1440, 1872), Palette15a),
     }
 
 
@@ -123,19 +122,19 @@ def protect_bad_image(func):
 def splitLeft(image):
     widthImg, heightImg = image.size
     
-    return image.crop((0, 0, widthImg / 2, heightImg))
+    return image.crop((0, 0, widthImg // 2, heightImg))
 
 
 @protect_bad_image
 def splitRight(image):
     widthImg, heightImg = image.size
     
-    return image.crop((widthImg / 2, 0, widthImg, heightImg))
+    return image.crop((widthImg // 2, 0, widthImg, heightImg))
 
 
 @protect_bad_image
 def quantizeImage(image, palette):
-    colors = len(palette) / 3
+    colors = len(palette) // 3
     if colors < 256:
         palette = palette + palette[:3] * (256 - colors)
     
@@ -174,7 +173,7 @@ def resizeImage(image, size):
         widthImg, heightImg = size
     
     if DEBUG:
-        print ' * Resizing image from %s to %s/%s' % (image.size, widthImg, heightImg)
+        print(' * Resizing image from %s to %s/%s' % (image.size, widthImg, heightImg))
     
     return image.resize((widthImg, heightImg), Image.ANTIALIAS)
 
@@ -240,7 +239,7 @@ def autoCropImage(image):
     
     if ImageChops.invert(image).getbbox() is None:
         if DEBUG:
-            print ' * autoCropImage => Using simpleCropImage because no bbox'
+            print(' * autoCropImage => Using simpleCropImage because no bbox')
         image = simpleCropImage(image)
         return image
     
@@ -249,7 +248,7 @@ def autoCropImage(image):
     diff = delta
     if _get_image_variance(image) < 2 * fixed_threshold:
         if DEBUG:
-            print ' * autoCropImage => Image variance is already too small, give back image'
+            print(' * autoCropImage => Image variance is already too small, give back image')
         image = simpleCropImage(image)
         return image
     
@@ -285,31 +284,31 @@ def autoCropImage(image):
     pageNumberX2 = width - diff
     if pageNumberCut3 - pageNumberCut1 > 2 * delta and float(pageNumberX2 - pageNumberX1) / float(pageNumberCut2 - pageNumberCut1) <= 9.0 \
             and _get_image_variance(image.crop((0, height - pageNumberCut3, width, height))) / ImageStat.Stat(image).var[0] < 0.1 \
-            and pageNumberCut3 < height / 4 - delta:
+            and pageNumberCut3 < height // 4 - delta:
         diff = pageNumberCut3
     else:
         diff = pageNumberCut1
     
     if DEBUG:
-        print ' * autoCropImage:: Computing crop diff to %s (in %.3f)' % (diff, time.time() - before)
+        print(' * autoCropImage:: Computing crop diff to %s (in %.3f)' % (diff, time.time() - before))
         image.save('tmp/1_before_crop.png')
     
     before = time.time()
     image = image.crop((0, 0, width, height - diff))
     if DEBUG:
-        print ' * autoCropImage:: apply crop to %s (in %.3f)' % (diff, time.time() - before)
+        print(' * autoCropImage:: apply crop to %s (in %.3f)' % (diff, time.time() - before))
         image.save('tmp/2_after_crop.png')
     
     before = time.time()
     image = simpleCropImage(image)
     if DEBUG:
-        print ' * autoCropImage:: simple crop to %s in %.3f' % (image.size, time.time() - before)
+        print(' * autoCropImage:: simple crop to %s in %.3f' % (image.size, time.time() - before))
         image.save('tmp/3_after_simple_crop.png')
     
     before = time.time()
     image = BlurautoCropImage(image)
     if DEBUG:
-        print ' * autoCropImage:: Blurauto %s in %.3f' % (image.size, time.time() - before)
+        print(' * autoCropImage:: Blurauto %s in %.3f' % (image.size, time.time() - before))
         image.save('tmp/4_after_auto_blur.png')
     
     return image
@@ -330,8 +329,8 @@ def frameImage(image, foreground, background, size):
     widthImg, heightImg = image.size
     
     pastePt = (
-        max(0, (widthDev - widthImg) / 2),
-        max(0, (heightDev - heightImg) / 2)
+        max(0, (widthDev - widthImg) // 2),
+        max(0, (heightDev - heightImg) // 2)
     )
     
     corner1 = (
@@ -410,47 +409,46 @@ def is_full_background_image(image):
     is_white = is_quite_white(start_pixel, precision=precision)
     is_black = is_quite_black(start_pixel, precision=precision)
     if DEBUG:
-        print '  is_full_background_image:: white=%s   black=%s' % (is_white, is_black)
+        print('  is_full_background_image:: white=%s   black=%s' % (is_white, is_black))
     if is_white:
-        for x in xrange(width):
-            for y in xrange(height):
+        for x in range(width):
+            for y in range(height):
                 pixel = pixels[x, y]
                 if not is_quite_white(pixel, precision=precision):
                     if DEBUG:
-                        print '    is_full_background_image:: the pixel %s/%s is not white %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2])
+                        print('    is_full_background_image:: the pixel %s/%s is not white %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2]))
                     return False
         # all was white
         return True
     if is_black:
-        for x in xrange(width):
-            for y in xrange(height):
-                pixel = pixels[x,y]
+        for x in range(width):
+            for y in range(height):
+                pixel = pixels[x, y]
                 if not is_quite_black(pixel, precision=precision):
                     if DEBUG:
-                        print '    is_full_background_image:: the pixel %s/%s is not black %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2])
+                        print('    is_full_background_image:: the pixel %s/%s is not black %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2]))
                     return False
         # all was black
         return True
     
     # First pixel was not white or black
     return False
-    
 
 
 def __fail_back_to_cut_very_big_one(image):
     image_height = __get_image_height(image)
     image_width = __get_image_width(image)
-    print "__fail_back_to_cut_very_big_one:: %s" % image_height
+    print("__fail_back_to_cut_very_big_one:: %s" % image_height)
     if image_height <= HARD_MAX_BLOC_HEIGHT:
         return [image]
     
     hard_split_images = []
     nb_images = int(ceil(float(image_height) / HARD_MAX_BLOC_HEIGHT))
     
-    for idx in xrange(nb_images):
+    for idx in range(nb_images):
         hard_split = image.crop((0, idx * HARD_MAX_BLOC_HEIGHT, image_width, (idx + 1) * HARD_MAX_BLOC_HEIGHT))
         hard_split_images.append(hard_split)
-    print "__fail_back_to_cut_very_big_one:: cut into %s parts" % len(hard_split_images)
+    print("__fail_back_to_cut_very_big_one:: cut into %s parts" % len(hard_split_images))
     return hard_split_images
 
 
@@ -462,14 +460,14 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         image.save('tmp/input_%s.jpg' % level)
     image_height = __get_image_height(image)
     image_width = __get_image_width(image)
-    print " === [LEVEL=%s] Try to smart split block of size %s / %s  (mostly black=%s)" % (level, image_height, image_width, is_black_background)
+    print(" === [LEVEL=%s] Try to smart split block of size %s / %s  (mostly black=%s)" % (level, image_height, image_width, is_black_background))
     
     # Maybe the image is now too small: just give it back :)
     if image_height <= 200:
         return [image]
     
     split_pixel = WHITE_PIXEL if not is_black_background else (0, 0, 0)
-    print " ==== Finding for pixel: %s" % str(split_pixel)
+    print(" ==== Finding for pixel: %s" % str(split_pixel))
     pixels = image.load()
     for y in range(500, image_height - 200, 10):  # do not try to cut too early, it's useless
         # First look if the left => higher right is possible for split
@@ -478,45 +476,34 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         from_left = True
         pixel = pixels[0, y]
         if is_background_pixel(pixel, is_black_background):
-            # if y == 2310:
-            #     print " ==== Founded good start pixel at line %s" % y
             for angle_int in range(0, 200):
-                angle = float(angle_int) / 100
+                angle = float(angle_int) // 100
                 found_angle = angle
                 line_is_valid = True
-                for x in xrange(image_width):
+                for x in range(image_width):
                     tested_pixel_y = y - ceil(x * angle)
                     if tested_pixel_y <= 0:
                         line_is_valid = False
                         break
-                    # if y == 2310 and angle_int == 58:
-                    #    print " ====== [Y=%s Angle=%s] Testing pixel %s / %s" % (y, angle, x, tested_pixel_y)
                     tested_pixel = pixels[x, tested_pixel_y]
-                    # if y == 2310 and angle_int == 58:
-                    #    pixels[x, tested_pixel_y] = (255, 0, 0)
                     if not is_background_pixel(tested_pixel, is_black_background):
-                        # if y == 2310:
-                        #     print "LEFT: [Y=%s Angle=%s] Line is not valid at x=%s y=%s (color=%s)" % (y, angle, x, tested_pixel_y, str(tested_pixel))
-                        #     if angle_int == 58:
-                        #         image.save('tmp/with_line2.jpg')
-                        #         #fuck
                         line_is_valid = False
                         break
                 # We did found a valid split line
                 if line_is_valid:
                     break
             if line_is_valid:
-                print "LEFT:: found a valid split line, angle=%s y=%s" % (found_angle, y)
+                print("LEFT:: found a valid split line, angle=%s y=%s" % (found_angle, y))
         
         # Then is the line is not found look if the right => higher left is possible for split
         if not line_is_valid and pixels[image_width - 1, y] == split_pixel:
             from_left = False
             for angle_int in range(0, 200):
-                angle = float(angle_int) / 100
+                angle = float(angle_int) // 100
                 found_angle = angle
                 line_is_valid = True
                 
-                for x in xrange(image_width - 1, -1, -1):
+                for x in range(image_width - 1, -1, -1):
                     tested_pixel_y = y - int(ceil((image_width - x) * angle))
                     if tested_pixel_y <= 0:
                         line_is_valid = False
@@ -535,14 +522,14 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         if not line_is_valid:
             continue
         
-        print "Yeah, we can cut from %s with angle %s and from left:%s" % (y, found_angle, from_left)
+        print("Yeah, we can cut from %s with angle %s and from left:%s" % (y, found_angle, from_left))
         
         split_pixels = {}
         if from_left:
-            for x in xrange(image_width):
+            for x in range(image_width):
                 split_pixels[x] = y - int(ceil(x * found_angle))
         else:
-            for x in xrange(image_width - 1, -1, -1):
+            for x in range(image_width - 1, -1, -1):
                 split_pixels[x] = y - int(ceil((image_width - x) * found_angle))
         lower_y = min(split_pixels.values())
         higher_y = max(split_pixels.values())
@@ -558,23 +545,23 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         # For debug:
         if DEBUG:
             if from_left:
-                for x in xrange(image_width):
+                for x in range(image_width):
                     tested_pixel_y = y - ceil(x * found_angle)
                     # print " ====== LEFT [Y=%s Angle=%s] SPLIT LINE WAS Testing pixel %s / %s :: %s" % (y, found_angle, x, tested_pixel_y, str(pixels[x, tested_pixel_y]))
                     pixels[x, tested_pixel_y] = (255, 0, 0)
             else:
-                for x in xrange(image_width - 1, -1, -1):
+                for x in range(image_width - 1, -1, -1):
                     tested_pixel_y = y - int(ceil((image_width - x) * found_angle))
                     # print " ====== RIGHT [Y=%s Angle=%s] SPLIT LINE WAS Testing pixel %s / %s :: %s" % (y, found_angle, x, tested_pixel_y, str(pixels[x, tested_pixel_y]))
                     pixels[x, tested_pixel_y] = (255, 0, 0)
         
         if DEBUG:
             image.save('tmp/with_line_%s.jpg' % level)
-            print "SPLIT RANGE", lower_y, higher_y
+            print("SPLIT RANGE", lower_y, higher_y)
         
         # HIGHER PART: clean all BELOW the line
-        for y in xrange(lower_y, higher_y):
-            for x in xrange(image_width):
+        for y in range(lower_y, higher_y):
+            for x in range(image_width):
                 line_y = split_pixels[x]
                 if y > higher_y or y > line_y:
                     higher_part_pixels[x, y] = WHITE_PIXEL
@@ -585,8 +572,8 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
             higher_part_image.save('tmp/higher_part_%s.jpg' % level)
         
         # LOWER PART: clean all OVER the line
-        for y in xrange(lower_y, higher_y):
-            for x in xrange(image_width):
+        for y in range(lower_y, higher_y):
+            for x in range(image_width):
                 line_y = split_pixels[x]
                 if y < lower_y or y < line_y:
                     rest_to_split_pixels[x, y] = WHITE_PIXEL
@@ -602,49 +589,50 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         
         return res
     
-    # We did failed to split it so give back the original image
-    print "did fail to smart split the image, still %s high" % image_height
+    # We did fail to split it so give back the original image
+    print("did fail to smart split the image, still %s high" % image_height)
     # fuck
     fail_back_images = __fail_back_to_cut_very_big_one(image)
     return fail_back_images
 
 
 def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_images, is_black_background):
+    from similarity import similarity
     box_image = image.crop((0, start_of_box, width, end_of_box))
     
     potential_images = [box_image]
     # Maybe it's too high
     img_height = __get_image_height(box_image)
     if img_height >= SOFT_MAX_BLOC_HEIGHT:
-        print " *** WebToon block is too high (%s), trying to split it again" % img_height
+        print(" *** WebToon block is too high (%s), trying to split it again" % img_height)
         potential_images = __try_to_smart_split_block(box_image, is_black_background, level=0)
     
     for p_image in potential_images:
         # TODO: TEST: if all pixels are black: drop
         image_cropped = autoCropImage(p_image)
-        print '  ** image cropped size: %s' % str(image_cropped.size)
+        print('  ** image cropped size: %s' % str(image_cropped.size))
         try:
             variance = _get_image_variance(image_cropped)
         except ZeroDivisionError:  # seems that the image is too small, let the real test look for it
-            print '   ** Image seems to have issue, skipping variance check'
+            print('   ** Image seems to have issue, skipping variance check')
             variance = 999  # do not delete it
-            
+        
         if variance < 1:  # mostly the same color, skip it
             similarity.add_deleted_image('too_low_variance', image_cropped, 'variance_%.2f' % variance, do_move=True)
-            print '  ** SKIP image cropped variance: %s is too small' % str(variance)
+            print('  ** SKIP image cropped variance: %s is too small' % str(variance))
             continue
         # Skip images that are too small (bugs in cut detection protection)
         if __get_image_height(image_cropped) <= MIN_BOX_ALLOWED_HEIGHT:
-            print "SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped)
+            print("SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped))
             continue
         if not similarity.is_valid_image(image_cropped):
-            print " ** DROPPING IMAGE"
+            print(" ** DROPPING IMAGE")
             continue
         if is_full_background_image(image_cropped):
-            print " ** Dropping full white/black image"
+            print(" ** Dropping full white/black image")
             similarity.add_deleted_image('too_white', image_cropped, 0, do_move=True)
             continue
-        print " Split size: %s" % str(image_cropped.size)
+        print(" Split size: %s" % str(image_cropped.size))
         split_final_images.append(image_cropped)
 
 
@@ -656,7 +644,7 @@ def splitWebtoon(image):
     most_color = _find_dominant_color(image)
     is_black_background = most_color == (0, 0, 0)
     
-    print " TOON: analysing image %s/%s  (is black background=%s)" % (width, height, is_black_background)
+    print(" TOON: analysing image %s/%s  (is black background=%s)" % (width, height, is_black_background))
     MIN_COLOR_HEIGHT = 30  # not less than 30px for an picture
     MAX_BOX_HEIGHT = 1400  # if more than 1400, if possible, close box
     pixels = image.load()  # this is not a list, nor is it list()'able
@@ -673,17 +661,17 @@ def splitWebtoon(image):
                     break
             else:  # black background, do not look at black
                 if y == LINE_DEBUG:
-                    print "PIXEL: %s => %s" % (x, str(cpixel))
+                    print("PIXEL: %s => %s" % (x, str(cpixel)))
                 if not is_quite_black(cpixel) and not cpixel == WHITE_PIXEL:
                     is_white = False
                     break
                 # else:
                 #    print "Line %s is white" % y
         if y == LINE_DEBUG:
-            print "%s IS WHITE LINE: %s" % (y, is_white)
+            print("%s IS WHITE LINE: %s" % (y, is_white))
         lines.append((y, is_white))
     
-    print "Number of white lines: %s" % (len([c for c in lines if c[1]]))
+    print("Number of white lines: %s" % (len([c for c in lines if c[1]])))
     
     start_of_box = None
     in_box = False
@@ -704,7 +692,7 @@ def splitWebtoon(image):
                 last_black_line = None
                 start_of_box = None
                 in_box = False
-                print "***" * 20, "Protection, split at", current_box_size
+                print("***" * 20, "Protection, split at", current_box_size)
                 continue
         
         # we already start
@@ -716,7 +704,7 @@ def splitWebtoon(image):
                 continue
             # or we start a new one
             else:
-                print ' - Starting a box at %s' % y
+                print(' - Starting a box at %s' % y)
                 in_box = True
                 last_black_line = y
                 start_of_box = y

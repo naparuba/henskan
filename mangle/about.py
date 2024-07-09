@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt4 import QtGui, uic
+from PyQt6 import QtWidgets, uic
 
-import util
+from .util import buildResPath
 
 
-class DialogAbout(QtGui.QDialog):
+class DialogAbout(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
-        uic.loadUi(util.buildResPath('mangle/ui/about.ui'), self)
+        super().__init__(parent)
+        uic.loadUi(buildResPath('mangle/ui/about.ui'), self)

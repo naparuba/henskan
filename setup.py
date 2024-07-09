@@ -17,7 +17,10 @@
 
 
 from distutils.core import setup
-import py2exe
+try:
+    import py2exe
+except ImportError:
+    print(f'Need to install py2exe package first')
 import sys
 
 

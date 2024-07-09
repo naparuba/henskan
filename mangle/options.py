@@ -14,15 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt4 import QtGui, uic
+from PyQt6 import QtWidgets, uic
 
 from image import ImageFlags
 import util
 
 
-class DialogOptions(QtGui.QDialog):
+class DialogOptions(QtWidgets.QDialog):
     def __init__(self, parent, book):
-        QtGui.QDialog.__init__(self, parent)
+        super().__init__(parent)
         
         uic.loadUi(util.buildResPath('mangle/ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
@@ -78,7 +78,6 @@ class DialogOptions(QtGui.QDialog):
             imageFlags |= ImageFlags.AutoCrop
         if self.checkboxWebtoon.isChecked():
             imageFlags |= ImageFlags.Webtoon
-
         
         # If we did modified a value, update the book
         # and only if we did change something to not

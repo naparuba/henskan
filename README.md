@@ -55,8 +55,8 @@ thought it was pretty clever at the time.
 
 For running from source:
 
-*   [PyQt4](https://riverbankcomputing.com/software/pyqt/download)
-*   [Python 2.7](http://www.python.org/download/releases/2.7/)
+*   [PyQt6](https://riverbankcomputing.com/software/pyqt/download)
+*   [Python 3](http://www.python.org/download/releases/)
 *   [Pillow (PIL)](https://pypi.org/project/Pillow/)
 *   [ReportLab](https://pypi.org/project/reportlab/)
 
@@ -67,7 +67,7 @@ so I am providing the old (and unsupported) package built by Rob White instead. 
 from source.
 
 *  [mangle_win.zip](https://foosoft.net/projects/mangle/dl/mangle_win.zip)
-*  [mangle_osx.zip](https://foosoft.net/projects/mangle/dl/mangle_osx.zip) (quite old)
+
 
 ## Building for Windows ##
 

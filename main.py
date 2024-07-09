@@ -15,17 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import os
 import sys
 
-from PyQt4 import QtGui
+my_dir = os.path.dirname(__file__)
+mangle_dir = os.path.join(my_dir, 'mangle')
+sys.path.insert(0, my_dir)
+sys.path.insert(0, mangle_dir)
+
+from PyQt6 import QtWidgets
 
 from mangle.book import MainWindowBook
 
-application = QtGui.QApplication(sys.argv)
+application = QtWidgets.QApplication(sys.argv)
 
 filename = sys.argv[1] if len(sys.argv) > 1 else None
 window = MainWindowBook(filename)
 window.show()
 
-application.exec_()
+application.exec()#exec_()

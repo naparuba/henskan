@@ -9,7 +9,8 @@ SIM_DIR = 'resources/similaires'
 
 all_hashes = {}
 
-print " * Hashing: %s" % SIM_DIR
+print
+" * Hashing: %s" % SIM_DIR
 files = os.listdir(SIM_DIR)
 files.sort()
 for f_path in files:
@@ -45,9 +46,11 @@ for f_path in files:
 for lst in similaires:
     lst.sort()
     if len(lst) == 1:
-        print " ** Alone: %s" % lst[0]
+        print
+        " ** Alone: %s" % lst[0]
     else:
-        print " - Similaires: %s" % ', '.join(lst)
+        print
+        " - Similaires: %s" % ', '.join(lst)
 
 SRC = r'C:\Users\j.gabes\Desktop\export\Solo Leveling'
 DELETED = r'C:\Users\j.gabes\Desktop\export\deleted'
@@ -63,10 +66,11 @@ total = len(files)
 i = 0
 for f_path in files:
     i += 1
-    print "\r %s %s/%s" % (f_path, i, total)
+    print
+    "\r %s %s/%s" % (f_path, i, total)
     full_path = os.path.join(SRC, f_path)
     img = Image.open(full_path)
-
+    
     is_valid = similarity.is_valid_image(img, do_move=False)
     is_full_background = is_full_background_image(img)
     if is_valid and not is_full_background:

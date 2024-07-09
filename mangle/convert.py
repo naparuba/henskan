@@ -17,22 +17,22 @@
 import os
 import time
 import shutil
-from PyQt4 import QtGui, QtCore
 import traceback
 
-from image import ImageFlags
+from PyQt6 import QtWidgets, QtCore
+
+from .image import ImageFlags
 import cbz
 import image
 import pdfimage
 
 
-
-class DialogConvert(QtGui.QProgressDialog):
+class DialogConvert(QtWidgets.QProgressDialog):
     def __init__(self, parent, book, directory):
-        QtGui.QProgressDialog.__init__(self)
+        super().__init__(parent)
         
         self.book = book
-        self.bookPath = os.path.join(unicode(directory), unicode(self.book.title))
+        self.bookPath = os.path.join(str(directory), str(self.book.title))
         
         self.timer = None
         self.setWindowTitle('Exporting book...')
@@ -75,7 +75,7 @@ class DialogConvert(QtGui.QProgressDialog):
         begin = time.time()
         converted_images = image.convertImage(source, target, device, flags)
         try:
-            print "* convert for %s => %s" % (target, converted_images)
+            print("* convert for %s => %s" % (target, converted_images))
         except LookupError:  # bad encoding?
             pass
         # If we have only one image, we can directly use the target
@@ -90,11 +90,11 @@ class DialogConvert(QtGui.QProgressDialog):
             if pdf is not None:
                 pdf.addImage(target)
         else:
-            print "* convert2 for %s => %s" % (target, converted_images)
+            print("* convert2 for %s => %s" % (target, converted_images))
             base_target = target.replace('.png', '')
             for (idx, converted_image) in enumerate(converted_images):
                 n_target = '%s_%04d.png' % (base_target, idx)
-                print "Want to saves %s with target: %s" % (converted_image, n_target)
+                print("Want to saves %s with target: %s" % (converted_image, n_target))
                 try:
                     image.saveImage(converted_image, n_target)
                 except:
@@ -105,7 +105,7 @@ class DialogConvert(QtGui.QProgressDialog):
                 if pdf is not None:
                     pdf.addImage(n_target)
         try:
-            print " * Convert & save in %.3fs for %s" % (time.time() - begin, target)
+            print(" * Convert & save in %.3fs for %s" % (time.time() - begin, target))
         except LookupError:  # bad encoding
             pass
     
@@ -114,19 +114,19 @@ class DialogConvert(QtGui.QProgressDialog):
         index = self.value()
         pages_split = self.increment
         target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split))
-        source = unicode(self.book.images[index])
+        source = str(self.book.images[index])
         
         if index == 0:
             try:
                 if not os.path.isdir(self.bookPath):
                     os.makedirs(self.bookPath)
             except OSError:
-                QtGui.QMessageBox.critical(self, 'Mangle', 'Cannot create directory %s' % self.bookPath)
+                QtWidgets.QMessageBox.critical(self, 'Mangle', 'Cannot create directory %s' % self.bookPath)
                 self.close()
                 return
             
             try:
-                base = os.path.join(self.bookPath, unicode(self.book.title))
+                base = os.path.join(self.bookPath, str(self.book.title))
                 
                 mangaName = base + '.manga'
                 if self.book.overwrite or not os.path.isfile(mangaName):
@@ -138,11 +138,11 @@ class DialogConvert(QtGui.QProgressDialog):
                 if self.book.overwrite or not os.path.isfile(mangaSaveName):
                     mangaSave = open(base + '.manga_save', 'w')
                     saveData = u'LAST=/mnt/us/pictures/%s/%s' % (self.book.title, os.path.split(target)[1])
-                    mangaSave.write(saveData.encode('utf-8'))
+                    mangaSave.write(saveData.encode('utf-8').decode())
                     mangaSave.close()
             
             except IOError:
-                QtGui.QMessageBox.critical(self, 'Mangle', 'Cannot write manga file(s) to directory %s' % self.bookPath)
+                QtWidgets.QMessageBox.critical(self, 'Mangle', 'Cannot write manga file(s) to directory %s' % self.bookPath)
                 self.close()
                 return False
         
@@ -187,15 +187,15 @@ class DialogConvert(QtGui.QProgressDialog):
                 # Convert page
                 self.convertAndSave(source, target, device, flags, archive, pdf)
         
-        except RuntimeError, error:
-            result = QtGui.QMessageBox.critical(
-                self,
-                'Mangle',
-                str(error),
-                QtGui.QMessageBox.Abort | QtGui.QMessageBox.Ignore,
-                QtGui.QMessageBox.Ignore
+        except RuntimeError as error:
+            result = QtWidgets.QMessageBox.critical(
+                    self,
+                    'Mangle',
+                    str(error),
+                    QtWidgets.QMessageBox.Abort | QtWidgets.QMessageBox.Ignore,
+                    QtWidgets.QMessageBox.Ignore
             )
-            if result == QtGui.QMessageBox.Abort:
+            if result == QtWidgets.QMessageBox.Abort:
                 self.close()
                 return
         
