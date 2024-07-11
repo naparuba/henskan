@@ -21,10 +21,9 @@ import traceback
 
 from PyQt6 import QtWidgets, QtCore
 
-from .image import ImageFlags
-import cbz
-import image
-import pdfimage
+from .image import ImageFlags, convertImage, saveImage, isSplitable
+from .cbz import Archive as CBZArchive
+from .pdfimage import PDFImage
 
 
 class DialogConvert(QtWidgets.QProgressDialog):
@@ -42,11 +41,11 @@ class DialogConvert(QtWidgets.QProgressDialog):
         
         self.archive = None
         if 'CBZ' in self.book.outputFormat:
-            self.archive = cbz.Archive(self.bookPath)
+            self.archive = CBZArchive(self.bookPath)
         
         self.pdf = None
         if "PDF" in self.book.outputFormat:
-            self.pdf = pdfimage.PDFImage(self.bookPath, str(self.book.title), str(self.book.device))
+            self.pdf = PDFImage(self.bookPath, str(self.book.title), str(self.book.device))
     
     
     def showEvent(self, event):
@@ -73,7 +72,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
     
     def convertAndSave(self, source, target, device, flags, archive, pdf):
         begin = time.time()
-        converted_images = image.convertImage(source, target, device, flags)
+        converted_images = convertImage(source, target, device, flags)
         try:
             print("* convert for %s => %s" % (target, converted_images))
         except LookupError:  # bad encoding?
@@ -81,7 +80,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
         # If we have only one image, we can directly use the target
         if len(converted_images) == 1:
             try:
-                image.saveImage(converted_images[0], target)
+                saveImage(converted_images[0], target)
             except:
                 print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
                 return
@@ -96,7 +95,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
                 n_target = '%s_%04d.png' % (base_target, idx)
                 print("Want to saves %s with target: %s" % (converted_image, n_target))
                 try:
-                    image.saveImage(converted_image, n_target)
+                    saveImage(converted_image, n_target)
                 except:
                     print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
                     return
@@ -157,7 +156,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
                 
                 # Check if page wide enough to split
                 if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
-                    if not image.isSplitable(source):
+                    if not isSplitable(source):
                         # remove split flags
                         splitFlags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
                                       ImageFlags.SplitLeft]

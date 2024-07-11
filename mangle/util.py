@@ -19,5 +19,6 @@ import sys
 
 
 def buildResPath(relative):
-    directory = os.path.dirname(os.path.realpath(sys.argv[0]))
-    return os.path.join(directory, relative)
+    #directory = os.path.dirname(os.path.realpath(sys.argv[0]))
+    my_dir = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(my_dir, relative)

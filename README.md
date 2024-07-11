@@ -71,9 +71,9 @@ from source.
 
 ## Building for Windows ##
 
-On windows you can build with the command:
+On Windows you can build with the command:
 
-    pyinstaller.exe  --name mangle -y --add-binary "mangle/ui;mangle/ui" --add-binary "mangle/img;mangle/img" --add-binary "mangle/resources;mangle/resources" --clean --win-private-assemblies -d all main.py
+    venv\Scripts\pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --onefile main.py
 
 ## Screenshots ##
 

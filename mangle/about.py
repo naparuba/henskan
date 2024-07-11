@@ -22,4 +22,4 @@ from .util import buildResPath
 class DialogAbout(QtWidgets.QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        uic.loadUi(buildResPath('mangle/ui/about.ui'), self)
+        uic.loadUi(buildResPath('ui/about.ui'), self)

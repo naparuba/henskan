@@ -28,7 +28,7 @@ from .about import DialogAbout
 from .convert import DialogConvert
 from .image import ImageFlags
 from .options import DialogOptions
-import util
+from .util import buildResPath
 
 
 # Sort function use to sort files in a natural order, by lowering
@@ -152,7 +152,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
     def __init__(self, filename=None):
         super().__init__()
         
-        uic.loadUi(util.buildResPath('mangle/ui/book.ui'), self)
+        uic.loadUi(buildResPath('ui/book.ui'), self)
         self.listWidgetFiles.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.actionFileNew.triggered.connect(self.onFileNew)
         self.actionFileOpen.triggered.connect(self.onFileOpen)

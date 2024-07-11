@@ -16,15 +16,15 @@
 
 from PyQt6 import QtWidgets, uic
 
-from image import ImageFlags
-import util
+from .image import ImageFlags
+from .util import buildResPath
 
 
 class DialogOptions(QtWidgets.QDialog):
     def __init__(self, parent, book):
         super().__init__(parent)
         
-        uic.loadUi(util.buildResPath('mangle/ui/options.ui'), self)
+        uic.loadUi(buildResPath('ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
         
         self.book = book
