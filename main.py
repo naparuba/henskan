@@ -29,8 +29,8 @@ from mangle.book import MainWindowBook
 
 application = QtWidgets.QApplication(sys.argv)
 
-filename = sys.argv[1] if len(sys.argv) > 1 else None
-window = MainWindowBook(filename)
+# filename = sys.argv[1] if len(sys.argv) > 1 else None
+window = MainWindowBook()
 window.show()
 
-application.exec()#exec_()
+application.exec()

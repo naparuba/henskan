@@ -15,15 +15,14 @@
 import time
 from math import ceil
 
+from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
+
 DEBUG = False
 
 
 def set_debug():
     global DEBUG
     DEBUG = True
-
-
-from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
 
 
 class ImageFlags:
@@ -40,7 +39,7 @@ class ImageFlags:
     Webtoon = 1 << 10
 
 
-class KindleData:
+class EReaderData:
     Palette4 = [
         0x00, 0x00, 0x00,
         0x55, 0x55, 0x55,
@@ -107,7 +106,7 @@ class KindleData:
 # the original image because PIL cannot manage it
 def protect_bad_image(func):
     def func_wrapper(*args, **kwargs):
-        # If cannot convert (like a bogus image) return the original one
+        # If you cannot convert (like a bogus image) return the original one
         # args will be "image" and other params are after
         try:
             return func(*args, **kwargs)
@@ -119,21 +118,21 @@ def protect_bad_image(func):
 
 
 @protect_bad_image
-def splitLeft(image):
+def _split_left(image):
     widthImg, heightImg = image.size
     
     return image.crop((0, 0, widthImg // 2, heightImg))
 
 
 @protect_bad_image
-def splitRight(image):
+def _split_right(image):
     widthImg, heightImg = image.size
     
     return image.crop((widthImg // 2, 0, widthImg, heightImg))
 
 
 @protect_bad_image
-def quantizeImage(image, palette):
+def _quantize_image(image, palette):
     colors = len(palette) // 3
     if colors < 256:
         palette = palette + palette[:3] * (256 - colors)
@@ -145,14 +144,14 @@ def quantizeImage(image, palette):
 
 
 @protect_bad_image
-def stretchImage(image, size):
-    widthDev, heightDev = size
+def _stretch_image(image, size):
+    width_device, height_device = size
     
-    return image.resize((widthDev, heightDev), Image.ANTIALIAS)
+    return image.resize((width_device, height_device), Image.Resampling.LANCZOS)
 
 
 @protect_bad_image
-def resizeImage(image, size):
+def _resize_image(image, size):
     widthDev, heightDev = size
     widthImg, heightImg = image.size
     
@@ -175,11 +174,11 @@ def resizeImage(image, size):
     if DEBUG:
         print(' * Resizing image from %s to %s/%s' % (image.size, widthImg, heightImg))
     
-    return image.resize((widthImg, heightImg), Image.ANTIALIAS)
+    return image.resize((widthImg, heightImg), Image.Resampling.LANCZOS)
 
 
 @protect_bad_image
-def formatImage(image):
+def _format_image_to_rgb(image):
     if image.mode == 'RGB':
         return image
     
@@ -187,19 +186,20 @@ def formatImage(image):
 
 
 @protect_bad_image
-def orientImage(image, size):
-    widthDev, heightDev = size
-    widthImg, heightImg = image.size
+def _orient_image(image, device_size):
+    width_dev, height_dev = device_size
+    width_img, height_img = image.size
     
-    if (widthImg > heightImg) != (widthDev > heightDev):
-        return image.rotate(90, Image.BICUBIC, True)
+    if (width_img > height_img) != (width_dev > height_dev):
+        # return image.rotate(90, Image.BICUBIC, True)
+        return image.rotate(90, Image.Resampling.LANCZOS, True)
     return image
 
 
 # We will auto crop the image, by removing just white part around the image
 # by inverting colors, and asking a bounder box ^^
 @protect_bad_image
-def BlurautoCropImage(image):
+def _blurauto_crop_image(image):
     orig_image = image
     power = 2.0  # mode: pifometre
     # work on a black image
@@ -232,7 +232,7 @@ def _get_image_variance(image):
 
 
 @protect_bad_image
-def autoCropImage(image):
+def _auto_crop_image(image):
     fixed_threshold = 5.0
     
     before = time.time()
@@ -240,7 +240,7 @@ def autoCropImage(image):
     if ImageChops.invert(image).getbbox() is None:
         if DEBUG:
             print(' * autoCropImage => Using simpleCropImage because no bbox')
-        image = simpleCropImage(image)
+        image = _simple_crop_image(image)
         return image
     
     width, height = image.size
@@ -249,45 +249,45 @@ def autoCropImage(image):
     if _get_image_variance(image) < 2 * fixed_threshold:
         if DEBUG:
             print(' * autoCropImage => Image variance is already too small, give back image')
-        image = simpleCropImage(image)
+        image = _simple_crop_image(image)
         return image
     
     while _get_image_variance(image.crop((0, height - diff, width, height))) < fixed_threshold and diff < height:
         diff += delta
     diff -= delta
-    pageNumberCut1 = diff
+    page_number_cut1 = diff
     if diff < delta:
         diff = delta
-    oldStat = _get_image_variance(image.crop((0, height - diff, width, height)))
+    old_stat = _get_image_variance(image.crop((0, height - diff, width, height)))
     diff += delta
-    while _get_image_variance(image.crop((0, height - diff, width, height))) - oldStat > 0 and diff < height // 4:
-        oldStat = _get_image_variance(image.crop((0, height - diff, width, height)))
+    while _get_image_variance(image.crop((0, height - diff, width, height))) - old_stat > 0 and diff < height // 4:
+        old_stat = _get_image_variance(image.crop((0, height - diff, width, height)))
         diff += delta
     diff -= delta
-    pageNumberCut2 = diff
+    page_number_cut2 = diff
     diff += delta
-    oldStat = _get_image_variance(image.crop((0, height - diff, width, height - pageNumberCut2)))
-    while _get_image_variance(image.crop((0, height - diff, width, height - pageNumberCut2))) < fixed_threshold + oldStat and diff < height // 4:
+    old_stat = _get_image_variance(image.crop((0, height - diff, width, height - page_number_cut2)))
+    while _get_image_variance(image.crop((0, height - diff, width, height - page_number_cut2))) < fixed_threshold + old_stat and diff < height // 4:
         diff += delta
     diff -= delta
-    pageNumberCut3 = diff
+    page_number_cut3 = diff
     delta = 5
     diff = delta
-    while _get_image_variance(image.crop((0, height - pageNumberCut2, diff, height))) < fixed_threshold and diff < width:
+    while _get_image_variance(image.crop((0, height - page_number_cut2, diff, height))) < fixed_threshold and diff < width:
         diff += delta
     diff -= delta
-    pageNumberX1 = diff
+    page_number_x1 = diff
     diff = delta
-    while _get_image_variance(image.crop((width - diff, height - pageNumberCut2, width, height))) < fixed_threshold and diff < width:
+    while _get_image_variance(image.crop((width - diff, height - page_number_cut2, width, height))) < fixed_threshold and diff < width:
         diff += delta
     diff -= delta
-    pageNumberX2 = width - diff
-    if pageNumberCut3 - pageNumberCut1 > 2 * delta and float(pageNumberX2 - pageNumberX1) / float(pageNumberCut2 - pageNumberCut1) <= 9.0 \
-            and _get_image_variance(image.crop((0, height - pageNumberCut3, width, height))) / ImageStat.Stat(image).var[0] < 0.1 \
-            and pageNumberCut3 < height // 4 - delta:
-        diff = pageNumberCut3
+    page_number_x2 = width - diff
+    if page_number_cut3 - page_number_cut1 > 2 * delta and float(page_number_x2 - page_number_x1) / float(page_number_cut2 - page_number_cut1) <= 9.0 \
+            and _get_image_variance(image.crop((0, height - page_number_cut3, width, height))) / ImageStat.Stat(image).var[0] < 0.1 \
+            and page_number_cut3 < height // 4 - delta:
+        diff = page_number_cut3
     else:
-        diff = pageNumberCut1
+        diff = page_number_cut1
     
     if DEBUG:
         print(' * autoCropImage:: Computing crop diff to %s (in %.3f)' % (diff, time.time() - before))
@@ -300,13 +300,13 @@ def autoCropImage(image):
         image.save('tmp/2_after_crop.png')
     
     before = time.time()
-    image = simpleCropImage(image)
+    image = _simple_crop_image(image)
     if DEBUG:
         print(' * autoCropImage:: simple crop to %s in %.3f' % (image.size, time.time() - before))
         image.save('tmp/3_after_simple_crop.png')
     
     before = time.time()
-    image = BlurautoCropImage(image)
+    image = _blurauto_crop_image(image)
     if DEBUG:
         print(' * autoCropImage:: Blurauto %s in %.3f' % (image.size, time.time() - before))
         image.save('tmp/4_after_auto_blur.png')
@@ -315,7 +315,7 @@ def autoCropImage(image):
 
 
 @protect_bad_image
-def simpleCropImage(image):
+def _simple_crop_image(image):
     try:
         x0, y0, xend, yend = ImageChops.invert(image).getbbox()
     except TypeError:  # bad image, specific to chops
@@ -324,7 +324,7 @@ def simpleCropImage(image):
     return image
 
 
-def frameImage(image, foreground, background, size):
+def _frame_image(image, foreground, background, size):
     widthDev, heightDev = size
     widthImg, heightImg = image.size
     
@@ -356,7 +356,7 @@ QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
 
 
 # Can be black is really black, or just VERY dark
-def is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
+def _is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
     if pixel == (0, 0, 0):
         return True
     if pixel[0] <= precision and pixel[1] <= precision and pixel[2] <= precision:
@@ -364,7 +364,7 @@ def is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
     return False
 
 
-def is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
+def _is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
     if pixel == (255, 255, 255):
         return True
     if pixel[0] >= 255 - precision and pixel[1] >= 255 - precision and pixel[2] >= 255 - precision:
@@ -372,10 +372,10 @@ def is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
     return False
 
 
-def is_background_pixel(pixel, is_black_background):
+def _is_background_pixel(pixel, is_black_background):
     if is_black_background:
-        return is_quite_black(pixel, precision=10)
-    return is_quite_white(pixel, precision=10)
+        return _is_quite_black(pixel, precision=10)
+    return _is_quite_white(pixel, precision=10)
 
 
 LINE_DEBUG = -1
@@ -399,22 +399,22 @@ WHITE_PIXEL = (255, 255, 255)
 
 
 # Remove images that are full white or full black
-def is_full_background_image(image):
+def _is_full_background_image(image):
     precision = 5
     image_rgb = image.convert('RGB')
     height = __get_image_height(image)
     width = __get_image_width(image)
     pixels = image_rgb.load()
     start_pixel = pixels[0, 0]
-    is_white = is_quite_white(start_pixel, precision=precision)
-    is_black = is_quite_black(start_pixel, precision=precision)
+    is_white = _is_quite_white(start_pixel, precision=precision)
+    is_black = _is_quite_black(start_pixel, precision=precision)
     if DEBUG:
         print('  is_full_background_image:: white=%s   black=%s' % (is_white, is_black))
     if is_white:
         for x in range(width):
             for y in range(height):
                 pixel = pixels[x, y]
-                if not is_quite_white(pixel, precision=precision):
+                if not _is_quite_white(pixel, precision=precision):
                     if DEBUG:
                         print('    is_full_background_image:: the pixel %s/%s is not white %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2]))
                     return False
@@ -424,7 +424,7 @@ def is_full_background_image(image):
         for x in range(width):
             for y in range(height):
                 pixel = pixels[x, y]
-                if not is_quite_black(pixel, precision=precision):
+                if not _is_quite_black(pixel, precision=precision):
                     if DEBUG:
                         print('    is_full_background_image:: the pixel %s/%s is not black %s-%s-%s' % (x, y, pixel[0], pixel[1], pixel[2]))
                     return False
@@ -455,7 +455,7 @@ def __fail_back_to_cut_very_big_one(image):
 # We have a block image that is too big, try to see if with linear cut it's possible to
 # have more parts
 def __try_to_smart_split_block(image, is_black_background, level=1):
-    image = simpleCropImage(image)
+    image = _simple_crop_image(image)
     if DEBUG:
         image.save('tmp/input_%s.jpg' % level)
     image_height = __get_image_height(image)
@@ -475,7 +475,7 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
         found_angle = None
         from_left = True
         pixel = pixels[0, y]
-        if is_background_pixel(pixel, is_black_background):
+        if _is_background_pixel(pixel, is_black_background):
             for angle_int in range(0, 200):
                 angle = float(angle_int) // 100
                 found_angle = angle
@@ -486,7 +486,7 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
                         line_is_valid = False
                         break
                     tested_pixel = pixels[x, tested_pixel_y]
-                    if not is_background_pixel(tested_pixel, is_black_background):
+                    if not _is_background_pixel(tested_pixel, is_black_background):
                         line_is_valid = False
                         break
                 # We did found a valid split line
@@ -510,7 +510,7 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
                         break
                     
                     tested_pixel = pixels[x, tested_pixel_y]
-                    if not is_background_pixel(tested_pixel, is_black_background):
+                    if not _is_background_pixel(tested_pixel, is_black_background):
                         line_is_valid = False
                         break
                 # We did found a valid split line
@@ -609,7 +609,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
     
     for p_image in potential_images:
         # TODO: TEST: if all pixels are black: drop
-        image_cropped = autoCropImage(p_image)
+        image_cropped = _auto_crop_image(p_image)
         print('  ** image cropped size: %s' % str(image_cropped.size))
         try:
             variance = _get_image_variance(image_cropped)
@@ -628,7 +628,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
         if not similarity.is_valid_image(image_cropped):
             print(" ** DROPPING IMAGE")
             continue
-        if is_full_background_image(image_cropped):
+        if _is_full_background_image(image_cropped):
             print(" ** Dropping full white/black image")
             similarity.add_deleted_image('too_white', image_cropped, 0, do_move=True)
             continue
@@ -636,7 +636,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
         split_final_images.append(image_cropped)
 
 
-def splitWebtoon(image):
+def _split_webtoon(image):
     split_images = []
     width, height = image.size
     
@@ -645,7 +645,7 @@ def splitWebtoon(image):
     is_black_background = most_color == (0, 0, 0)
     
     print(" TOON: analysing image %s/%s  (is black background=%s)" % (width, height, is_black_background))
-    MIN_COLOR_HEIGHT = 30  # not less than 30px for an picture
+    MIN_COLOR_HEIGHT = 30  # not less than 30px for a picture
     MAX_BOX_HEIGHT = 1400  # if more than 1400, if possible, close box
     pixels = image.load()  # this is not a list, nor is it list()'able
     
@@ -662,7 +662,7 @@ def splitWebtoon(image):
             else:  # black background, do not look at black
                 if y == LINE_DEBUG:
                     print("PIXEL: %s => %s" % (x, str(cpixel)))
-                if not is_quite_black(cpixel) and not cpixel == WHITE_PIXEL:
+                if not _is_quite_black(cpixel) and not cpixel == WHITE_PIXEL:
                     is_white = False
                     break
                 # else:
@@ -725,91 +725,89 @@ def splitWebtoon(image):
                 start_of_box = None
                 in_box = False
     
-    # We did finish, if we was in a box, close it
+    # We did finish, if we are in a box, close it
     if in_box:
         __parse_webtoon_block(image, start_of_box, width, last_black_line, split_images, is_black_background)
     
     return split_images
 
 
-def loadImage(source):
+def _load_image(source):
     try:
         return Image.open(source)
     except IOError:
         raise RuntimeError('Cannot read image file %s' % source)
 
 
-def saveImage(image, target):
+def save_image(image, target):
     try:
         image.save(target)
     except IOError:
         raise RuntimeError('Cannot write image file %s' % target)
 
 
-# Look if the image is more width than hight, if not, means
+# Look if the image is more width than height, if not, means
 # it's should not be split (like the front page of a manga,
 # when all the inner pages are double)
-def isSplitable(source):
-    image = loadImage(source)
+def is_splitable(source):
+    image = _load_image(source)
     try:
-        widthImg, heightImg = image.size
-        return widthImg > heightImg
+        width, height = image.size
+        return width > height
     except IOError:
         raise RuntimeError('Cannot read image file %s' % source)
 
 
-def convertImage(source, target, device, flags):
+def convert_image(source, target, device, flags):
     try:
-        size, palette = KindleData.Profiles[device]
+        size, palette = EReaderData.Profiles[device]
     except KeyError:
         raise RuntimeError('Unexpected output device %s' % device)
     # Load image from source path
-    image = loadImage(source)
+    image = _load_image(source)
     
     # Format according to palette
     
     # Webtoon is special, manually take order
     if flags & ImageFlags.Webtoon:
         converted_images = []  # we can have more than 1 results
-        images = splitWebtoon(image)
+        images = _split_webtoon(image)
         for image in images:
-            image = formatImage(image)
-            # if flags & ImageFlags.Orient:
-            #    image = orientImage(image, size)
+            image = _format_image_to_rgb(image)
             if flags & ImageFlags.Resize:
-                image = resizeImage(image, size)
+                image = _resize_image(image, size)
             if flags & ImageFlags.Stretch:
-                image = stretchImage(image, size)
+                image = _stretch_image(image, size)
             if flags & ImageFlags.Quantize:
-                image = quantizeImage(image, palette)
+                image = _quantize_image(image, palette)
             converted_images.append(image)
         
         return converted_images
     
-    image = formatImage(image)
+    image = _format_image_to_rgb(image)
     
     # Apply flag transforms
     if flags & ImageFlags.SplitRight:
-        image = splitRight(image)
+        image = _split_right(image)
     if flags & ImageFlags.SplitRightLeft:
-        image = splitLeft(image)
+        image = _split_left(image)
     if flags & ImageFlags.SplitLeft:
-        image = splitLeft(image)
+        image = _split_left(image)
     if flags & ImageFlags.SplitLeftRight:
-        image = splitRight(image)
+        image = _split_right(image)
     
     # Auto crop the image, but before manage size and co, clean the source so
     if flags & ImageFlags.AutoCrop:
-        image = autoCropImage(image)
+        image = _auto_crop_image(image)
     if flags & ImageFlags.Orient:
-        image = orientImage(image, size)
+        image = _orient_image(image, size)
     if flags & ImageFlags.Resize:
-        image = resizeImage(image, size)
+        image = _resize_image(image, size)
     if flags & ImageFlags.Stretch:
-        image = stretchImage(image, size)
+        image = _stretch_image(image, size)
     if flags & ImageFlags.Frame:
-        image = frameImage(image, tuple(palette[:3]), tuple(palette[-3:]), size)
+        image = _frame_image(image, tuple(palette[:3]), tuple(palette[-3:]), size)
     if flags & ImageFlags.Quantize:
-        image = quantizeImage(image, palette)
+        image = _quantize_image(image, palette)
     
     return [image]  # only one image if not webtoon

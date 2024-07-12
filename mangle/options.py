@@ -17,14 +17,14 @@
 from PyQt6 import QtWidgets, uic
 
 from .image import ImageFlags
-from .util import buildResPath
+from .util import get_ui_path
 
 
 class DialogOptions(QtWidgets.QDialog):
     def __init__(self, parent, book):
         super().__init__(parent)
         
-        uic.loadUi(buildResPath('ui/options.ui'), self)
+        uic.loadUi(get_ui_path('ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
         
         self.book = book
@@ -55,39 +55,38 @@ class DialogOptions(QtWidgets.QDialog):
         # First get dialog values
         title = self.lineEditTitle.text()
         device = self.comboBoxDevice.currentText()
-        outputFormat = self.comboBoxFormat.currentText()
+        output_format = self.comboBoxFormat.currentText()
         overwrite = self.checkboxOverwrite.isChecked()
         
         # Now compute flags
-        imageFlags = 0
+        image_flags = 0
         if self.checkboxOrient.isChecked():
-            imageFlags |= ImageFlags.Orient
+            image_flags |= ImageFlags.Orient
         if self.checkboxResize.isChecked():
-            imageFlags |= ImageFlags.Resize
+            image_flags |= ImageFlags.Resize
         if self.checkboxStretch.isChecked():
-            imageFlags |= ImageFlags.Stretch
+            image_flags |= ImageFlags.Stretch
         if self.checkboxQuantize.isChecked():
-            imageFlags |= ImageFlags.Quantize
+            image_flags |= ImageFlags.Quantize
         if self.checkboxFrame.isChecked():
-            imageFlags |= ImageFlags.Frame
+            image_flags |= ImageFlags.Frame
         if self.checkboxSplit.isChecked():
-            imageFlags |= ImageFlags.SplitRightLeft
+            image_flags |= ImageFlags.SplitRightLeft
         if self.checkboxSplitInverse.isChecked():
-            imageFlags |= ImageFlags.SplitLeftRight
+            image_flags |= ImageFlags.SplitLeftRight
         if self.checkboxAutoCrop.isChecked():
-            imageFlags |= ImageFlags.AutoCrop
+            image_flags |= ImageFlags.AutoCrop
         if self.checkboxWebtoon.isChecked():
-            imageFlags |= ImageFlags.Webtoon
+            image_flags |= ImageFlags.Webtoon
         
-        # If we did modified a value, update the book
-        # and only if we did change something to not
+        # If we did modify a value, update the book and only if we did change something to not
         # warn for nothing the user
         modified = (
                 self.book.title != title or
                 self.book.device != device or
                 self.book.overwrite != overwrite or
-                self.book.imageFlags != imageFlags or
-                self.book.outputFormat != outputFormat
+                self.book.imageFlags != image_flags or
+                self.book.outputFormat != output_format
         )
         
         if modified:
@@ -95,5 +94,5 @@ class DialogOptions(QtWidgets.QDialog):
             self.book.title = title
             self.book.device = device
             self.book.overwrite = overwrite
-            self.book.imageFlags = imageFlags
-            self.book.outputFormat = outputFormat
+            self.book.imageFlags = image_flags
+            self.book.outputFormat = output_format

@@ -18,26 +18,26 @@ import os.path
 
 from reportlab.pdfgen import canvas
 
-from .image import KindleData
+from .image import EReaderData
 
 
 class PDFImage(object):
     def __init__(self, path, title, device):
-        outputDirectory = os.path.dirname(path)
-        outputFileName = '%s.pdf' % os.path.basename(path)
-        outputPath = os.path.join(outputDirectory, outputFileName)
-        self.currentDevice = device
-        self.bookTitle = title
-        self.pageSize = KindleData.Profiles[self.currentDevice][0]
-        # pagesize could be letter or A4 for standarization, but we need to control some image sizes
-        self.canvas = canvas.Canvas(outputPath, pagesize=self.pageSize)
+        output_directory = os.path.dirname(path)
+        output_file_name = '%s.pdf' % os.path.basename(path)
+        output_path = os.path.join(output_directory, output_file_name)
+        # self._current_device = device
+        # self.bookTitle = title
+        self._page_size = EReaderData.Profiles[device][0]
+        # pagesize could be letter or A4 for standardization, but we need to control some image sizes
+        self.canvas = canvas.Canvas(output_path, pagesize=self._page_size)
         self.canvas.setAuthor("Poutoux")
-        self.canvas.setTitle(self.bookTitle)
-        self.canvas.setSubject("Created for " + self.currentDevice)
+        self.canvas.setTitle(title)
+        self.canvas.setSubject("Created for " + device)
     
     
     def addImage(self, filename):
-        self.canvas.drawImage(filename, 0, 0, width=self.pageSize[0], height=self.pageSize[1], preserveAspectRatio=True, anchor='c')
+        self.canvas.drawImage(filename, 0, 0, width=self._page_size[0], height=self._page_size[1], preserveAspectRatio=True, anchor='c')
         self.canvas.showPage()
     
     

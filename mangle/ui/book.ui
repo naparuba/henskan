@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -41,9 +41,6 @@
      <string>&amp;File</string>
     </property>
     <addaction name="actionFileNew"/>
-    <addaction name="actionFileOpen"/>
-    <addaction name="actionFileSave"/>
-    <addaction name="actionFileSaveAs"/>
     <addaction name="separator"/>
     <addaction name="actionFileExit"/>
    </widget>
@@ -51,25 +48,7 @@
     <property name="title">
      <string>&amp;Book</string>
     </property>
-    <widget class="QMenu" name="menu_Add">
-     <property name="title">
-      <string>&amp;Add</string>
-     </property>
-     <addaction name="actionBookAddFiles"/>
-     <addaction name="actionBookAddDirectory"/>
-    </widget>
-    <widget class="QMenu" name="menu_Shift">
-     <property name="title">
-      <string>&amp;Shift</string>
-     </property>
-     <addaction name="actionBookShiftUp"/>
-     <addaction name="actionBookShiftDown"/>
-    </widget>
     <addaction name="actionBookOptions"/>
-    <addaction name="separator"/>
-    <addaction name="menu_Add"/>
-    <addaction name="actionBookRemove"/>
-    <addaction name="menu_Shift"/>
     <addaction name="separator"/>
     <addaction name="actionBookExport"/>
    </widget>
@@ -95,11 +74,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionFileNew"/>
-   <addaction name="actionFileOpen"/>
-   <addaction name="actionFileSave"/>
    <addaction name="separator"/>
-   <addaction name="actionBookAddFiles"/>
-   <addaction name="actionBookAddDirectory"/>
    <addaction name="actionBookRemove"/>
    <addaction name="actionBookShiftUp"/>
    <addaction name="actionBookShiftDown"/>
@@ -180,7 +155,7 @@
    </property>
   </action>
   <action name="actionBookOptions">
-  <property name="icon">
+   <property name="icon">
     <iconset>
      <normaloff>../img/book.png</normaloff>../img/book.png</iconset>
    </property>

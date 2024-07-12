@@ -16,10 +16,10 @@
 
 from PyQt6 import QtWidgets, uic
 
-from .util import buildResPath
+from .util import get_ui_path
 
 
 class DialogAbout(QtWidgets.QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        uic.loadUi(buildResPath('ui/about.ui'), self)
+        uic.loadUi(get_ui_path('ui/about.ui'), self)

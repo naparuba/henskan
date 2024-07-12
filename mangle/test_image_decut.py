@@ -2,7 +2,7 @@ import time
 import shutil
 import imagehash
 import os
-from image import Image, is_full_background_image
+from image import Image, _is_full_background_image
 from similarity import similarity
 
 SIM_DIR = 'resources/similaires'
@@ -72,7 +72,7 @@ for f_path in files:
     img = Image.open(full_path)
     
     is_valid = similarity.is_valid_image(img, do_move=False)
-    is_full_background = is_full_background_image(img)
+    is_full_background = _is_full_background_image(img)
     if is_valid and not is_full_background:
         pth = os.path.join(VALID, f_path)
         shutil.copy(full_path, pth)

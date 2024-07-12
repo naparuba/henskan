@@ -15,10 +15,21 @@
 
 
 import os.path
-import sys
+import re
 
 
-def buildResPath(relative):
-    #directory = os.path.dirname(os.path.realpath(sys.argv[0]))
+# Sort function use to sort files in a natural order, by lowering
+# characters, and manage multi levels of integers (tome 1/ page 1.jpg, etc etc)
+# cf: See http://www.codinghorror.com/blog/archives/001018.html
+def natural_key(string_):
+    l = []
+    for s in re.split(r'(\d+)', string_):
+        if s.isdigit():
+            l.append(int(s))
+        else:
+            l.append(s.lower())
+    return l
+
+def get_ui_path(relative):
     my_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(my_dir, relative)

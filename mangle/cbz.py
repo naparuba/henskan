@@ -20,15 +20,15 @@ from zipfile import ZipFile, ZIP_STORED
 
 class Archive(object):
     def __init__(self, path):
-        outputDirectory = os.path.dirname(path)
-        outputFileName = '%s.cbz' % os.path.basename(path)
-        outputPath = os.path.join(outputDirectory, outputFileName)
-        self.zipfile = ZipFile(outputPath, 'w', ZIP_STORED)
+        output_directory = os.path.dirname(path)
+        output_file_name = '%s.cbz' % os.path.basename(path)
+        output_path = os.path.join(output_directory, output_file_name)
+        self._zipfile = ZipFile(output_path, 'w', ZIP_STORED)
     
     
-    def addFile(self, filename):
+    def add(self, filename):
         arcname = os.path.basename(filename)
-        self.zipfile.write(filename, arcname)
+        self._zipfile.write(filename, arcname)
     
     
     def __enter__(self):
@@ -40,4 +40,4 @@ class Archive(object):
     
     
     def close(self):
-        self.zipfile.close()
+        self._zipfile.close()
