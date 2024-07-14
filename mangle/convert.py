@@ -22,7 +22,8 @@ import traceback
 
 from PyQt6 import QtWidgets, QtCore
 
-from .image import ImageFlags, convert_image, save_image, is_splitable
+from .archive import ARCHIVE_FORMATS
+from .image import ImageFlags, convert_image, save_image, is_splitable, EReaderData
 from .archive_cbz import ArchiveCBZ
 from .archive_pdf import ArchivePDF
 from .parameters import parameters
@@ -33,20 +34,20 @@ class DialogConvert(QtWidgets.QProgressDialog):
         # type: (QtWidgets.QWidget, str) -> None
         super().__init__(parent)
         
-        self.book = parameters
-        self._book_path = os.path.join(directory, self.book.title)
-        
         self.timer = None
         self.setWindowTitle('Exporting book...')
-        self.setMaximum(len(self.book.images))
+        self.setMaximum(len(parameters.images))
         self.setValue(0)
         self.increment = 0
         
+        self._book_path = os.path.join(directory, parameters.title)
         self._archive = None
-        if 'CBZ' in self.book.outputFormat:
+        device = parameters.device
+        output_format = EReaderData.get_archive_format(device)
+        if ARCHIVE_FORMATS.CBZ == output_format:
             self._archive = ArchiveCBZ(self._book_path)
-        elif "PDF" in self.book.outputFormat:
-            self._archive = ArchivePDF(self._book_path, str(self.book.title), str(self.book.device))
+        elif ARCHIVE_FORMATS.PDF == output_format:
+            self._archive = ArchivePDF(self._book_path, parameters.title, parameters.device)
     
     
     def showEvent(self, event):
@@ -72,8 +73,8 @@ class DialogConvert(QtWidgets.QProgressDialog):
     def _convert_and_save(self, source, target, flags):
         # type: (str, str, int) -> None
         begin = time.time()
-        device = str(self.book.device)
-        converted_images = convert_image(source, target, device, flags)
+        device = parameters.device
+        converted_images = convert_image(source, device, flags)
         print(f"* convert for {target} => {len(converted_images)}")
         
         # If we have only one image, we can directly use the target
@@ -107,7 +108,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
         index = self.value()
         pages_split = self.increment
         target = os.path.join(self._book_path, '%05d.png' % (index + pages_split))
-        source = self.book.images[index]
+        source = parameters.images[index]
         
         if index == 0:
             try:
@@ -121,7 +122,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
         self.setLabelText(f'Processing {os.path.split(source)[1]}...')
         
         try:
-            flags = self.book.imageFlags
+            flags = parameters.imageFlags
             
             # Check if page wide enough to split
             if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):

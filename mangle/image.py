@@ -16,7 +16,9 @@
 import time
 from math import ceil
 
-from PIL import Image, ImageDraw, ImageChops, ImageFilter, ImageOps, ImageStat
+from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
+
+from .archive import ARCHIVE_FORMATS
 
 DEBUG = False
 
@@ -27,16 +29,13 @@ def set_debug():
 
 
 class ImageFlags:
-    Orient = 1 << 0
-    Resize = 1 << 1
-    Frame = 1 << 2
-    Quantize = 1 << 3
-    Stretch = 1 << 4
+    # Splits
     SplitRightLeft = 1 << 5  # split right then left
     SplitRight = 1 << 6  # split only the right page
     SplitLeft = 1 << 7  # split only the left page
     SplitLeftRight = 1 << 8  # split left then right page
-    AutoCrop = 1 << 9
+    
+    # Is a webtoon
     Webtoon = 1 << 10
 
 
@@ -85,21 +84,39 @@ class EReaderData:
     ]
     
     Profiles = {
-        'Kindle 1':                         ((600, 800), Palette4),
-        'Kindle 2/3/Touch':                 ((600, 800), Palette15a),
-        'Kindle 4 & 5':                     ((600, 800), Palette15b),
-        'Kindle DX/DXG':                    ((824, 1200), Palette15a),
-        'Kindle Paperwhite 1 & 2':          ((758, 1024), Palette15b),
-        'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette15b),
-        'Kobo Mini/Touch':                  ((600, 800), Palette15b),
-        'Kobo Glo':                         ((768, 1024), Palette15b),
-        'Kobo Glo HD':                      ((1072, 1448), Palette15b),
-        'Kobo Aura':                        ((758, 1024), Palette15b),
-        'Kobo Aura HD':                     ((1080, 1440), Palette15b),
-        'Kobo Aura H2O':                    ((1080, 1430), Palette15a),
-        'Kobo Libra H2O':                   ((1264, 1680), Palette15a),
-        'Kobo Elipsa 2E':                   ((1440, 1872), Palette15a),
+        'Kindle 1':                         ((600, 800), Palette4, ARCHIVE_FORMATS.PDF),
+        'Kindle 2/3/Touch':                 ((600, 800), Palette15a, ARCHIVE_FORMATS.PDF),
+        'Kindle 4 & 5':                     ((600, 800), Palette15b, ARCHIVE_FORMATS.PDF),
+        'Kindle DX/DXG':                    ((824, 1200), Palette15a, ARCHIVE_FORMATS.PDF),
+        'Kindle Paperwhite 1 & 2':          ((758, 1024), Palette15b, ARCHIVE_FORMATS.PDF),
+        'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette15b, ARCHIVE_FORMATS.PDF),
+        'Kobo Mini/Touch':                  ((600, 800), Palette15b, ARCHIVE_FORMATS.CBZ),
+        'Kobo Glo':                         ((768, 1024), Palette15b, ARCHIVE_FORMATS.CBZ),
+        'Kobo Glo HD':                      ((1072, 1448), Palette15b, ARCHIVE_FORMATS.CBZ),
+        'Kobo Aura':                        ((758, 1024), Palette15b, ARCHIVE_FORMATS.CBZ),
+        'Kobo Aura HD':                     ((1080, 1440), Palette15b, ARCHIVE_FORMATS.CBZ),
+        'Kobo Aura H2O':                    ((1080, 1430), Palette15a, ARCHIVE_FORMATS.CBZ),
+        'Kobo Libra H2O':                   ((1264, 1680), Palette15a, ARCHIVE_FORMATS.CBZ),
+        'Kobo Elipsa 2E':                   ((1440, 1872), Palette15a, ARCHIVE_FORMATS.CBZ),
     }
+    
+    
+    @staticmethod
+    def get_size(device):
+        # type: (str) -> tuple[int, int]
+        return EReaderData.Profiles[device][0]
+    
+    
+    @staticmethod
+    def get_palette(device):
+        # type: (str) -> list
+        return EReaderData.Profiles[device][1]
+    
+    
+    @staticmethod
+    def get_archive_format(device):
+        # type: (str) -> ARCHIVE_FORMATS
+        return EReaderData.Profiles[device][2]
 
 
 # decorate a function that use image, *** and if there
@@ -148,14 +165,6 @@ def _quantize_image(image, palette):
 
 
 @protect_bad_image
-def _stretch_image(image, size):
-    # type: (Image, tuple[int, int]) -> Image
-    width_device, height_device = size
-    
-    return image.resize((width_device, height_device), Image.Resampling.LANCZOS)
-
-
-@protect_bad_image
 def _resize_image(image, size):
     # type: (Image, tuple[int, int]) -> Image
     width_dev, height_dev = size
@@ -199,7 +208,6 @@ def _orient_image(image, device_size):
     width_img, height_img = image.size
     
     if (width_img > height_img) != (width_dev > height_dev):
-        # return image.rotate(90, Image.BICUBIC, True)
         return image.rotate(90, Image.Resampling.LANCZOS, True)
     return image
 
@@ -335,35 +343,6 @@ def _simple_crop_image(image):
         return image
     image = image.crop((x0, y0, xend, yend))
     return image
-
-
-def _frame_image(image, foreground, background, size):
-    # type: (Image, tuple[int, int, int], tuple[int, int, int], tuple[int, int]) -> Image
-    width_dev, height_dev = size
-    width_img, height_img = image.size
-    
-    paste_pt = (
-        max(0, (width_dev - width_img) // 2),
-        max(0, (height_dev - height_img) // 2)
-    )
-    
-    corner1 = (
-        paste_pt[0] - 1,
-        paste_pt[1] - 1
-    )
-    
-    corner2 = (
-        paste_pt[0] + width_img + 1,
-        paste_pt[1] + height_img + 1
-    )
-    
-    image_bg = Image.new(image.mode, size, background)
-    image_bg.paste(image, paste_pt)
-    
-    draw = ImageDraw.Draw(image_bg)
-    draw.rectangle([corner1, corner2], outline=foreground)
-    
-    return image_bg
 
 
 QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
@@ -785,16 +764,16 @@ def is_splitable(source):
         raise RuntimeError('Cannot read image file %s' % source)
 
 
-def convert_image(source, target, device, flags):
-    # type: (str, str, str, int) -> list[Image]
+def convert_image(source, device, flags):
+    # type: (str, str, int) -> list[Image]
     try:
-        size, palette = EReaderData.Profiles[device]
+        size = EReaderData.get_size(device)
+        palette = EReaderData.get_palette(device)
     except KeyError:
         raise RuntimeError('Unexpected output device %s' % device)
+    
     # Load image from source path
     image = _load_image(source)
-    
-    # Format according to palette
     
     # Webtoon is special, manually take order
     if flags & ImageFlags.Webtoon:
@@ -802,12 +781,8 @@ def convert_image(source, target, device, flags):
         images = _split_webtoon(image)
         for image in images:
             image = _format_image_to_rgb(image)
-            if flags & ImageFlags.Resize:
-                image = _resize_image(image, size)
-            if flags & ImageFlags.Stretch:
-                image = _stretch_image(image, size)
-            if flags & ImageFlags.Quantize:
-                image = _quantize_image(image, palette)
+            image = _resize_image(image, size)
+            image = _quantize_image(image, palette)
             converted_images.append(image)
         
         return converted_images
@@ -824,18 +799,13 @@ def convert_image(source, target, device, flags):
     if flags & ImageFlags.SplitLeftRight:
         image = _split_right(image)
     
-    # Auto crop the image, but before manage size and co, clean the source so
-    if flags & ImageFlags.AutoCrop:
-        image = _auto_crop_image(image)
-    if flags & ImageFlags.Orient:
-        image = _orient_image(image, size)
-    if flags & ImageFlags.Resize:
-        image = _resize_image(image, size)
-    if flags & ImageFlags.Stretch:
-        image = _stretch_image(image, size)
-    if flags & ImageFlags.Frame:
-        image = _frame_image(image, tuple(palette[:3]), tuple(palette[-3:]), size)
-    if flags & ImageFlags.Quantize:
-        image = _quantize_image(image, palette)
+    # Auto crop (remove useless white) the image, but before manage size and co, clean the source so
+    image = _auto_crop_image(image)
+    # Always Orient based the size: if too large, go paysage
+    image = _orient_image(image, size)
+    # Adapt to the EReader native resolution
+    image = _resize_image(image, size)
+    # Adapt to EReader palette
+    image = _quantize_image(image, palette)
     
     return [image]  # only one image if not webtoon

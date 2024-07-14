@@ -65,7 +65,7 @@ def parse_webtoon(number):
     
     print
     ' * Converting image %s' % source
-    split_images = image.convert_image(source, target, DEVICE, flags)
+    split_images = image.convert_image(source, DEVICE, flags)
     for (idx, split_image) in enumerate(split_images):
         pth = os.path.join(TMP_DIR, 'toon%s_%d.png' % (number, idx))
         print
@@ -92,6 +92,6 @@ flags = image.ImageFlags.AutoCrop | image.ImageFlags.Resize | image.ImageFlags.Q
 
 print
 ' * Converting image %s' % source
-image.convert_image(source, target, DEVICE, flags)
+image.convert_image(source, DEVICE, flags)
 print
 '  - Done in %s' % target

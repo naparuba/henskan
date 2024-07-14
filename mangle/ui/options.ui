@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>350</width>
-    <height>363</height>
+    <width>364</width>
+    <height>519</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -128,66 +128,7 @@
           </item>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="labelFormat">
-          <property name="text">
-           <string>Format</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="comboBoxFormat">
-          <item>
-           <property name="text">
-            <string>Images &amp; CBZ &amp; PDF</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Images only</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>PDF only</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>CBZ only</string>
-           </property>
-          </item>
-         </widget>
-        </item>
        </layout>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkboxOverwrite">
-        <property name="text">
-         <string>Overwrite existing files</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkboxOrient">
-        <property name="text">
-         <string>Orient images to match aspect ratio</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkboxQuantize">
-        <property name="text">
-         <string>Dither images to match device palette</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkboxFrame">
-        <property name="text">
-         <string>Draw frame around images</string>
-        </property>
-       </widget>
       </item>
       <item>
        <widget class="QCheckBox" name="checkboxSplit">
@@ -204,13 +145,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkboxAutoCrop">
-        <property name="text">
-         <string>Auto crop image (remove white around the image)</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QCheckBox" name="checkboxWebtoon">
         <property name="text">
          <string>Is a Webtoon (split in N images)</string>
@@ -218,23 +152,9 @@
        </widget>
       </item>
       <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Size</string>
-          </property>
-         </widget>
-        </item>
-      <item>
-       <widget class="QRadioButton" name="checkboxResize">
+       <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Resize images to center on screen</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="checkboxStretch">
-        <property name="text">
-         <string>Stretch images to fill the screen</string>
+         <string>Size</string>
         </property>
        </widget>
       </item>

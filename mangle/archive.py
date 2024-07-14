@@ -1,5 +1,6 @@
 # Copyright 2011-2019 Alex Yatskov
 # Copyright 2020+     Gabès Jean (naparuba@gmail.com)
+# Copyright (C) 2011  Marek Kubica <marek@xivilization.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,33 +14,22 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from .image import ImageFlags
-
-
-class Parameters(object):
-    DefaultDevice = 'Kobo Libra H2O'
-    DefaultImageFlags = 0
-    
-    images: list[str]
-    filename: str | None
-    title: str | None
-    titleSet: bool
-    device: str
-    imageFlags: int
-    
-    
-    def __init__(self):
-        self.clean()
-    
-    
-    def clean(self):
-        self.images = []
-        self.filename = None
-        self.title = None
-        self.titleSet = False
-        self.device = self.DefaultDevice
-        self.imageFlags = self.DefaultImageFlags
+from abc import ABC, abstractmethod
+from enum import Enum
 
 
-parameters = Parameters()
+class ARCHIVE_FORMATS(Enum):
+    CBZ = 'CBZ'
+    PDF = 'PDF'
+
+
+class Archive(ABC):
+    
+    @abstractmethod
+    def add(self, filename):
+        pass
+    
+    
+    @abstractmethod
+    def close(self):
+        pass
