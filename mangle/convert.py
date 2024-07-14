@@ -25,22 +25,16 @@ from PyQt6 import QtWidgets, QtCore
 from .image import ImageFlags, convert_image, save_image, is_splitable
 from .archive_cbz import ArchiveCBZ
 from .archive_pdf import ArchivePDF
-
 from .parameters import parameters
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .parameters import Parameters
 
 
 class DialogConvert(QtWidgets.QProgressDialog):
-    def __init__(self, parent, book, directory):
-        # type: (QtWidgets.QWidget, Parameters, str) -> None
+    def __init__(self, parent, directory):
+        # type: (QtWidgets.QWidget, str) -> None
         super().__init__(parent)
         
         self.book = parameters
-        self.bookPath = os.path.join(str(directory), str(self.book.title))
+        self._book_path = os.path.join(directory, self.book.title)
         
         self.timer = None
         self.setWindowTitle('Exporting book...')
@@ -48,13 +42,11 @@ class DialogConvert(QtWidgets.QProgressDialog):
         self.setValue(0)
         self.increment = 0
         
-        self.archive = None
+        self._archive = None
         if 'CBZ' in self.book.outputFormat:
-            self.archive = ArchiveCBZ(self.bookPath)
-        
-        self.pdf = None
-        if "PDF" in self.book.outputFormat:
-            self.pdf = ArchivePDF(self.bookPath, str(self.book.title), str(self.book.device))
+            self._archive = ArchiveCBZ(self._book_path)
+        elif "PDF" in self.book.outputFormat:
+            self._archive = ArchivePDF(self._book_path, str(self.book.title), str(self.book.device))
     
     
     def showEvent(self, event):
@@ -69,21 +61,18 @@ class DialogConvert(QtWidgets.QProgressDialog):
     def hideEvent(self, event):
         # type: (QtWidgets.QHideEvent) -> None
         
-        # Close the archive if we created a CBZ file
-        if self.archive is not None:
-            self.archive.close()
-        # Close and generate the PDF File
-        if self.pdf is not None:
-            self.pdf.close()
+        # Close the CBZ/PDF
+        if self._archive is not None:
+            self._archive.close()
         
-        # Remove image directory if the user didn't wish for images
-        if 'Image' not in self.book.outputFormat:
-            shutil.rmtree(self.bookPath)
+        print(f'Cleaning temporary directory {self._book_path}')
+        shutil.rmtree(self._book_path)
     
     
-    def convertAndSave(self, source, target, device, flags, archive, pdf):
-        # type: (str, str, str, int, ArchiveCBZ, ArchivePDF) -> None
+    def _convert_and_save(self, source, target, flags):
+        # type: (str, str, int) -> None
         begin = time.time()
+        device = str(self.book.device)
         converted_images = convert_image(source, target, device, flags)
         print(f"* convert for {target} => {len(converted_images)}")
         
@@ -92,27 +81,24 @@ class DialogConvert(QtWidgets.QProgressDialog):
             try:
                 save_image(converted_images[0], target)
             except:
-                print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
+                print(f'convertAndSave:: ERROR in saveImage: {traceback.format_exc()}')
                 return
-            if archive is not None:
-                archive.add(target)
-            if pdf is not None:
-                pdf.add(target)
+            if self._archive is not None:
+                self._archive.add(target)
+        
         else:
-            print("* convert2 for %s => %s" % (target, converted_images))
+            print(f"* convert2 for {target} => {converted_images}")
             base_target = target.replace('.png', '')
             for (idx, converted_image) in enumerate(converted_images):
                 n_target = '%s_%04d.png' % (base_target, idx)
-                print("Want to saves %s with target: %s" % (converted_image, n_target))
+                print(f"Want to saves {converted_image} with target: {n_target}")
                 try:
                     save_image(converted_image, n_target)
                 except:
-                    print('convertAndSave:: ERROR in saveImage: %s' % traceback.format_exc())
+                    print(f'convertAndSave:: ERROR in saveImage: {traceback.format_exc()}')
                     return
-                if archive is not None:
-                    archive.add(n_target)
-                if pdf is not None:
-                    pdf.add(n_target)
+                if self._archive is not None:
+                    self._archive.add(n_target)
         
         print(f" * Convert & save in {time.time() - begin:.3f}s for {target}")
     
@@ -120,58 +106,50 @@ class DialogConvert(QtWidgets.QProgressDialog):
     def _on_timer(self):
         index = self.value()
         pages_split = self.increment
-        target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split))
+        target = os.path.join(self._book_path, '%05d.png' % (index + pages_split))
         source = self.book.images[index]
         
         if index == 0:
             try:
-                if not os.path.isdir(self.bookPath):
-                    os.makedirs(self.bookPath)
+                if not os.path.isdir(self._book_path):
+                    os.makedirs(self._book_path)
             except OSError:
-                QtWidgets.QMessageBox.critical(self, 'Mangle', 'Cannot create directory %s' % self.bookPath)
+                QtWidgets.QMessageBox.critical(self, 'Mangle', f'Cannot create directory {self._book_path}')
                 self.close()
                 return
         
-        self.setLabelText('Processing %s...' % os.path.split(source)[1])
+        self.setLabelText(f'Processing {os.path.split(source)[1]}...')
         
         try:
-            if self.book.overwrite or not os.path.isfile(target):
-                device = str(self.book.device)
-                flags = self.book.imageFlags
-                archive = self.archive
-                pdf = self.pdf
+            flags = self.book.imageFlags
+            
+            # Check if page wide enough to split
+            if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
+                if not is_splitable(source):
+                    # remove split flags
+                    split_flags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
+                                   ImageFlags.SplitLeft]
+                    for f in split_flags:
+                        flags &= ~f
+            
+            # For right page (if requested in options and need for this image)
+            if flags & ImageFlags.SplitRightLeft:
+                self._convert_and_save(source, target, flags ^ ImageFlags.SplitRightLeft | ImageFlags.SplitRight)
                 
-                # Check if page wide enough to split
-                if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
-                    if not is_splitable(source):
-                        # remove split flags
-                        split_flags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
-                                       ImageFlags.SplitLeft]
-                        for f in split_flags:
-                            flags &= ~f
+                # Change target for left page
+                target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
+                self.increment += 1
+            
+            # For right page (if requested), but in inverted mode
+            if flags & ImageFlags.SplitLeftRight:
+                self._convert_and_save(source, target, flags ^ ImageFlags.SplitLeftRight | ImageFlags.SplitLeft)
                 
-                # For right page (if requested in options and need for this image)
-                if flags & ImageFlags.SplitRightLeft:
-                    self.convertAndSave(source, target, device,
-                                        flags ^ ImageFlags.SplitRightLeft | ImageFlags.SplitRight,
-                                        archive, pdf)
-                    
-                    # Change target for left page
-                    target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split + 1))
-                    self.increment += 1
-                
-                # For right page (if requested), but in inverted mode
-                if flags & ImageFlags.SplitLeftRight:
-                    self.convertAndSave(source, target, device,
-                                        flags ^ ImageFlags.SplitLeftRight | ImageFlags.SplitLeft,
-                                        archive, pdf)
-                    
-                    # Change target for left page
-                    target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split + 1))
-                    self.increment += 1
-                
-                # Convert page
-                self.convertAndSave(source, target, device, flags, archive, pdf)
+                # Change target for left page
+                target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
+                self.increment += 1
+            
+            # Convert page
+            self._convert_and_save(source, target, flags)
         
         except RuntimeError as error:
             result = QtWidgets.QMessageBox.critical(

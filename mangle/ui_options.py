@@ -36,13 +36,13 @@ class DialogOptions(QtWidgets.QDialog):
     checkboxWebtoon: QtWidgets.QCheckBox
     
     
-    def __init__(self, parent, book):
+    def __init__(self, parent):
         super().__init__(parent)
         
         uic.loadUi(get_ui_path('ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
         
-        self.book = parameters
+        # self.book = parameters
         self.moveOptionsToDialog()
     
     
@@ -52,20 +52,20 @@ class DialogOptions(QtWidgets.QDialog):
     
     # Get options from current book (like a loaded one) and set the dialog values
     def moveOptionsToDialog(self):
-        self.lineEditTitle.setText(self.book.title or 'Untitled')
-        self.comboBoxDevice.setCurrentIndex(max(self.comboBoxDevice.findText(self.book.device), 0))
-        self.comboBoxFormat.setCurrentIndex(max(self.comboBoxFormat.findText(self.book.outputFormat), 0))
-        self.checkboxOverwrite.setChecked(self.book.overwrite)
-        self.checkboxOrient.setChecked(self.book.imageFlags & ImageFlags.Orient)
-        self.checkboxResize.setChecked(self.book.imageFlags & ImageFlags.Resize)
-        self.checkboxStretch.setChecked(self.book.imageFlags & ImageFlags.Stretch)
-        self.checkboxQuantize.setChecked(self.book.imageFlags & ImageFlags.Quantize)
-        self.checkboxFrame.setChecked(self.book.imageFlags & ImageFlags.Frame)
-        self.checkboxAutoCrop.setChecked(self.book.imageFlags & ImageFlags.AutoCrop)
-        self.checkboxWebtoon.setChecked(self.book.imageFlags & ImageFlags.Webtoon)
+        self.lineEditTitle.setText(parameters.title or 'Untitled')
+        self.comboBoxDevice.setCurrentIndex(max(self.comboBoxDevice.findText(parameters.device), 0))
+        self.comboBoxFormat.setCurrentIndex(max(self.comboBoxFormat.findText(parameters.outputFormat), 0))
+        self.checkboxOverwrite.setChecked(parameters.overwrite)
+        self.checkboxOrient.setChecked(parameters.imageFlags & ImageFlags.Orient)
+        self.checkboxResize.setChecked(parameters.imageFlags & ImageFlags.Resize)
+        self.checkboxStretch.setChecked(parameters.imageFlags & ImageFlags.Stretch)
+        self.checkboxQuantize.setChecked(parameters.imageFlags & ImageFlags.Quantize)
+        self.checkboxFrame.setChecked(parameters.imageFlags & ImageFlags.Frame)
+        self.checkboxAutoCrop.setChecked(parameters.imageFlags & ImageFlags.AutoCrop)
+        self.checkboxWebtoon.setChecked(parameters.imageFlags & ImageFlags.Webtoon)
     
     
-    # Save parameters set on the dialogs to the book object if need
+    # Save parameters set on the dialogs to the book object
     def moveDialogToOptions(self):
         # First get dialog values
         title = self.lineEditTitle.text()
@@ -94,20 +94,8 @@ class DialogOptions(QtWidgets.QDialog):
         if self.checkboxWebtoon.isChecked():
             image_flags |= ImageFlags.Webtoon
         
-        # If we did modify a value, update the book and only if we did change something to not
-        # warn for nothing the user
-        modified = (
-                self.book.title != title or
-                self.book.device != device or
-                self.book.overwrite != overwrite or
-                self.book.imageFlags != image_flags or
-                self.book.outputFormat != output_format
-        )
-        
-        if modified:
-            self.book.modified = True
-            self.book.title = title
-            self.book.device = device
-            self.book.overwrite = overwrite
-            self.book.imageFlags = image_flags
-            self.book.outputFormat = output_format
+        parameters.title = title
+        parameters.device = device
+        parameters.overwrite = overwrite
+        parameters.imageFlags = image_flags
+        parameters.outputFormat = output_format

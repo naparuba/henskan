@@ -112,7 +112,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def _show_options(self):
-        dialog = DialogOptions(self, self._book)
+        dialog = DialogOptions(self)
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             self._book.titleSet = True
     
@@ -123,7 +123,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
             return
         
         if not self._book.titleSet:
-            dialog = DialogOptions(self, self._book)
+            dialog = DialogOptions(self)
             if dialog.exec() == QtWidgets.QDialog.DialogCode.Rejected:
                 return
             else:
@@ -131,7 +131,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select a directory to export book to')
         if directory:
-            dialog = DialogConvert(self, self._book, directory)
+            dialog = DialogConvert(self, directory)
             dialog.exec()
     
     

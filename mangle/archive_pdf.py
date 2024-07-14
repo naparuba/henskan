@@ -17,6 +17,7 @@
 
 
 import os.path
+import time
 import traceback
 
 from reportlab.pdfgen import canvas
@@ -46,14 +47,7 @@ class ArchivePDF(object):
         self._canvas.showPage()  # close page
     
     
-    def __enter__(self):
-        return self
-    
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # type: (type, Exception, traceback) -> None
-        self.close()
-    
-    
     def close(self):
+        t0 = time.time()
         self._canvas.save()
+        print(f"PDF generation time: {time.time() - t0:.3f}s")

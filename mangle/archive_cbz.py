@@ -17,6 +17,7 @@
 
 
 import os.path
+import time
 import traceback
 from zipfile import ZipFile, ZIP_STORED
 
@@ -36,14 +37,7 @@ class ArchiveCBZ(object):
         self._zipfile.write(filename, arcname)
     
     
-    def __enter__(self):
-        return self
-    
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # type: (type, Exception, traceback) -> None
-        self.close()
-    
-    
     def close(self):
+        t0 = time.time()
         self._zipfile.close()
+        print(f"CBZ generation time: {time.time() - t0:.3f}s")
