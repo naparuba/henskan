@@ -14,19 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .image import ImageFlags
-
 
 class Parameters(object):
     DefaultDevice = 'Kobo Libra H2O'
-    DefaultImageFlags = 0
+    DefaultTitle = 'Untitled'
     
     images: list[str]
-    filename: str | None
-    title: str | None
-    titleSet: bool
-    device: str
-    imageFlags: int
+    
+    _title: str
+    _device: str
+    
+    _is_webtoon: bool
+    
+    _split_right_then_left = False
+    _split_left_then_right = False
     
     
     def __init__(self):
@@ -35,11 +36,59 @@ class Parameters(object):
     
     def clean(self):
         self.images = []
-        self.filename = None
-        self.title = None
-        self.titleSet = False
-        self.device = self.DefaultDevice
-        self.imageFlags = self.DefaultImageFlags
+        
+        self._title = self.DefaultTitle
+        self._device = self.DefaultDevice
+        
+        self._split_left_then_right = False
+        self._split_left_then_right = False
+        self._is_webtoon = False
+    
+    
+    def set_title(self, title):
+        self._title = title
+    
+    
+    def get_title(self):
+        return self._title
+    
+    
+    def is_title_set(self):
+        return self._title != self.DefaultTitle
+    
+    
+    def is_webtoon(self):
+        return self._is_webtoon
+    
+    
+    def set_is_webtoon(self, is_webtoon):
+        self._is_webtoon = is_webtoon
+    
+    
+    def get_device(self):
+        return self._device
+    
+    
+    def set_device(self, device):
+        self._device = device
+    
+    
+    def is_split_left_then_right(self):
+        return self._split_left_then_right
+    
+    
+    def set_split_left_then_right(self, b):
+        # type: (bool) -> None
+        self._split_left_then_right = b
+    
+    
+    def is_split_right_then_left(self):
+        return self._split_right_then_left
+    
+    
+    def set_split_right_then_left(self, b):
+        # type: (bool) -> None
+        self._split_right_then_left = b
 
 
 parameters = Parameters()

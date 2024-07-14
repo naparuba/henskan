@@ -23,7 +23,7 @@ import traceback
 from PyQt6 import QtWidgets, QtCore
 
 from .archive import ARCHIVE_FORMATS
-from .image import ImageFlags, convert_image, save_image, is_splitable, EReaderData
+from .image import convert_image, save_image, is_splitable, EReaderData
 from .archive_cbz import ArchiveCBZ
 from .archive_pdf import ArchivePDF
 from .parameters import parameters
@@ -34,28 +34,28 @@ class DialogConvert(QtWidgets.QProgressDialog):
         # type: (QtWidgets.QWidget, str) -> None
         super().__init__(parent)
         
-        self.timer = None
-        self.setWindowTitle('Exporting book...')
+        self.setWindowTitle(f'Exporting book {parameters.get_title()}')
         self.setMaximum(len(parameters.images))
         self.setValue(0)
-        self.increment = 0
         
-        self._book_path = os.path.join(directory, parameters.title)
+        self._timer = None
+        self._split_page_offset = 0
+        self._book_path = os.path.join(directory, parameters.get_title())
         self._archive = None
-        device = parameters.device
+        device = parameters.get_device()
         output_format = EReaderData.get_archive_format(device)
         if ARCHIVE_FORMATS.CBZ == output_format:
             self._archive = ArchiveCBZ(self._book_path)
         elif ARCHIVE_FORMATS.PDF == output_format:
-            self._archive = ArchivePDF(self._book_path, parameters.title, parameters.device)
+            self._archive = ArchivePDF(self._book_path, parameters.get_title(), parameters.get_device())
     
     
     def showEvent(self, event):
         # type: (QtWidgets.QShowEvent) -> None
-        if self.timer is None:
-            self.timer = QtCore.QTimer()
-            self.timer.timeout.connect(self._on_timer)
-            self.timer.start(0)
+        if self._timer is None:
+            self._timer = QtCore.QTimer()
+            self._timer.timeout.connect(self._on_timer)
+            self._timer.start(0)
     
     
     # Called when the dialog finishes processing.
@@ -70,12 +70,18 @@ class DialogConvert(QtWidgets.QProgressDialog):
         shutil.rmtree(self._book_path)
     
     
-    def _convert_and_save(self, source, target, flags):
-        # type: (str, str, int) -> None
+    def _convert_and_save(self, source, target, split_right=False, split_left=False):
+        # type: (str, str, bool, bool) -> None
         begin = time.time()
-        device = parameters.device
-        converted_images = convert_image(source, device, flags)
-        print(f"* convert for {target} => {len(converted_images)}")
+        
+        converted_images = convert_image(source, split_right=split_right, split_left=split_left)
+        
+        if split_right:
+            print(f"  - Split right {source}")
+        if split_left:
+            print(f"  - Split left  {source}")
+        
+        print(f"* convert for {source} => {target}({len(converted_images)})")
         
         # If we have only one image, we can directly use the target
         if len(converted_images) == 1:
@@ -106,7 +112,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
     
     def _on_timer(self):
         index = self.value()
-        pages_split = self.increment
+        pages_split = self._split_page_offset
         target = os.path.join(self._book_path, '%05d.png' % (index + pages_split))
         source = parameters.images[index]
         
@@ -122,35 +128,33 @@ class DialogConvert(QtWidgets.QProgressDialog):
         self.setLabelText(f'Processing {os.path.split(source)[1]}...')
         
         try:
-            flags = parameters.imageFlags
-            
-            # Check if page wide enough to split
-            if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
-                if not is_splitable(source):
-                    # remove split flags
-                    split_flags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
-                                   ImageFlags.SplitLeft]
-                    for f in split_flags:
-                        flags &= ~f
-            
-            # For right page (if requested in options and need for this image)
-            if flags & ImageFlags.SplitRightLeft:
-                self._convert_and_save(source, target, flags ^ ImageFlags.SplitRightLeft | ImageFlags.SplitRight)
+            # Asked for split: maybe we cannot
+            if parameters.is_split_left_then_right() or parameters.is_split_right_then_left():
+                can_be_split = is_splitable(source)  # is image large enough to be split?
+                if can_be_split:
+                    # Generate 2 images: right, then left
+                    if parameters.is_split_right_then_left():
+                        self._convert_and_save(source, target, split_right=True)
+                        
+                        # Change target for left page
+                        target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
+                        self._split_page_offset += 1
+                        self._convert_and_save(source, target, split_left=True)
+                    
+                    # just the other order
+                    else:
+                        self._convert_and_save(source, target, split_left=True)
+                        
+                        # Change target for left page
+                        target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
+                        self._split_page_offset += 1
+                        self._convert_and_save(source, target, split_right=True)
                 
-                # Change target for left page
-                target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
-                self.increment += 1
-            
-            # For right page (if requested), but in inverted mode
-            if flags & ImageFlags.SplitLeftRight:
-                self._convert_and_save(source, target, flags ^ ImageFlags.SplitLeftRight | ImageFlags.SplitLeft)
-                
-                # Change target for left page
-                target = os.path.join(self._book_path, '%05d.png' % (index + pages_split + 1))
-                self.increment += 1
-            
-            # Convert page
-            self._convert_and_save(source, target, flags)
+                else:  # simple page (un-splitable) on a split manga
+                    self._convert_and_save(source, target)
+            else:
+                # Convert page
+                self._convert_and_save(source, target)
         
         except RuntimeError as error:
             result = QtWidgets.QMessageBox.critical(

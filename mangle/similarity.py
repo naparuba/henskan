@@ -15,14 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import os
 
 try:
     from imagehash import imagehash
 except ImportError:
     imagehash = None
     print("Missing imagehash lib")
-import os
-from image import Image
+
+from .image import Image
 
 UNWANTED = r'C:\Users\j.gabes\Desktop\export\unwanted'
 DELETED = r'C:\Users\j.gabes\Desktop\export\deleted'

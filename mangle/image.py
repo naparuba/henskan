@@ -19,6 +19,7 @@ from math import ceil
 from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
 
 from .archive import ARCHIVE_FORMATS
+from .parameters import parameters
 
 DEBUG = False
 
@@ -26,17 +27,6 @@ DEBUG = False
 def set_debug():
     global DEBUG
     DEBUG = True
-
-
-class ImageFlags:
-    # Splits
-    SplitRightLeft = 1 << 5  # split right then left
-    SplitRight = 1 << 6  # split only the right page
-    SplitLeft = 1 << 7  # split only the left page
-    SplitLeftRight = 1 << 8  # split left then right page
-    
-    # Is a webtoon
-    Webtoon = 1 << 10
 
 
 class EReaderData:
@@ -599,7 +589,7 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
 
 def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_images, is_black_background):
     # type: (Image, int, int, int, list[Image], bool) -> None
-    from similarity import similarity
+    from .similarity import similarity
     box_image = image.crop((0, start_of_box, width, end_of_box))
     
     potential_images = [box_image]
@@ -764,8 +754,10 @@ def is_splitable(source):
         raise RuntimeError('Cannot read image file %s' % source)
 
 
-def convert_image(source, device, flags):
-    # type: (str, str, int) -> list[Image]
+def convert_image(source, split_right=False, split_left=False):
+    # type: (str,  bool, bool) -> list[Image]
+    
+    device = parameters.get_device()
     try:
         size = EReaderData.get_size(device)
         palette = EReaderData.get_palette(device)
@@ -776,7 +768,7 @@ def convert_image(source, device, flags):
     image = _load_image(source)
     
     # Webtoon is special, manually take order
-    if flags & ImageFlags.Webtoon:
+    if parameters.is_webtoon():
         converted_images = []  # we can have more than 1 results
         images = _split_webtoon(image)
         for image in images:
@@ -789,15 +781,12 @@ def convert_image(source, device, flags):
     
     image = _format_image_to_rgb(image)
     
-    # Apply flag transforms
-    if flags & ImageFlags.SplitRight:
+    # Apply splits:
+    if split_right:  # flags & ImageFlags.SplitRight:
         image = _split_right(image)
-    if flags & ImageFlags.SplitRightLeft:
+    if split_left:
+        # if flags & ImageFlags.SplitRightLeft:
         image = _split_left(image)
-    if flags & ImageFlags.SplitLeft:
-        image = _split_left(image)
-    if flags & ImageFlags.SplitLeftRight:
-        image = _split_right(image)
     
     # Auto crop (remove useless white) the image, but before manage size and co, clean the source so
     image = _auto_crop_image(image)

@@ -113,8 +113,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     def _show_options(self):
         dialog = DialogOptions(self)
-        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-            self._book.titleSet = True
+        dialog.exec()
     
     
     def _do_export(self):
@@ -122,12 +121,11 @@ class MainWindowBook(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, 'Mangle', 'This book has no images to export')
             return
         
-        if not self._book.titleSet:
+        if not self._book.is_title_set():
             dialog = DialogOptions(self)
-            if dialog.exec() == QtWidgets.QDialog.DialogCode.Rejected:
+            dialog.exec()
+            if not self._book.is_title_set():
                 return
-            else:
-                self._book.titleSet = True
         
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select a directory to export book to')
         if directory:

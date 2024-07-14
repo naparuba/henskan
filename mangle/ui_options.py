@@ -17,7 +17,6 @@
 
 from PyQt6 import QtWidgets, uic
 
-from .image import ImageFlags
 from .util import get_ui_path
 from .parameters import parameters
 
@@ -26,6 +25,8 @@ class DialogOptions(QtWidgets.QDialog):
     lineEditTitle: QtWidgets.QLineEdit
     comboBoxDevice: QtWidgets.QComboBox
     checkboxWebtoon: QtWidgets.QCheckBox
+    checkboxSplit: QtWidgets.QCheckBox
+    checkboxSplitInverse: QtWidgets.QCheckBox
     
     
     def __init__(self, parent):
@@ -34,37 +35,24 @@ class DialogOptions(QtWidgets.QDialog):
         uic.loadUi(get_ui_path('ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
         
-        self.moveOptionsToDialog()
+        self._move_options_to_dialog()
     
     
     def onAccept(self):
-        self.moveDialogToOptions()
+        self._move_dialog_to_options()
     
     
     # Get options from current book (like a loaded one) and set the dialog values
-    def moveOptionsToDialog(self):
-        self.lineEditTitle.setText(parameters.title or 'Untitled')
-        self.comboBoxDevice.setCurrentIndex(max(self.comboBoxDevice.findText(parameters.device), 0))
-        self.checkboxWebtoon.setChecked(parameters.imageFlags & ImageFlags.Webtoon)
+    def _move_options_to_dialog(self):
+        self.lineEditTitle.setText(parameters.get_title())
+        self.comboBoxDevice.setCurrentIndex(max(self.comboBoxDevice.findText(parameters.get_device()), 0))
+        self.checkboxWebtoon.setChecked(parameters.is_webtoon())
     
     
     # Save parameters set on the dialogs to the book object
-    def moveDialogToOptions(self):
-        # First get dialog values
-        title = self.lineEditTitle.text()
-        device = self.comboBoxDevice.currentText()
-        
-        # Now compute flags
-        image_flags = 0
-        
-        if self.checkboxSplit.isChecked():
-            image_flags |= ImageFlags.SplitRightLeft
-        if self.checkboxSplitInverse.isChecked():
-            image_flags |= ImageFlags.SplitLeftRight
-        
-        if self.checkboxWebtoon.isChecked():
-            image_flags |= ImageFlags.Webtoon
-        
-        parameters.title = title
-        parameters.device = device
-        parameters.imageFlags = image_flags
+    def _move_dialog_to_options(self):
+        parameters.set_split_right_then_left(self.checkboxSplit.isChecked())
+        parameters.set_split_left_then_right(self.checkboxSplitInverse.isChecked())
+        parameters.set_is_webtoon(self.checkboxWebtoon.isChecked())
+        parameters.set_title(self.lineEditTitle.text())
+        parameters.set_device(self.comboBoxDevice.currentText())
