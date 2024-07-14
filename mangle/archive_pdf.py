@@ -1,4 +1,6 @@
 # Copyright (C) 2012  Cristian Lizana <cristian@lizana.in>
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,14 +17,16 @@
 
 
 import os.path
+import traceback
 
 from reportlab.pdfgen import canvas
 
 from .image import EReaderData
 
 
-class PDFImage(object):
+class ArchivePDF(object):
     def __init__(self, path, title, device):
+        # type: (str, str, str) -> None
         output_directory = os.path.dirname(path)
         output_file_name = '%s.pdf' % os.path.basename(path)
         output_path = os.path.join(output_directory, output_file_name)
@@ -30,15 +34,16 @@ class PDFImage(object):
         # self.bookTitle = title
         self._page_size = EReaderData.Profiles[device][0]
         # pagesize could be letter or A4 for standardization, but we need to control some image sizes
-        self.canvas = canvas.Canvas(output_path, pagesize=self._page_size)
-        self.canvas.setAuthor("Poutoux")
-        self.canvas.setTitle(title)
-        self.canvas.setSubject("Created for " + device)
+        self._canvas = canvas.Canvas(output_path, pagesize=self._page_size)
+        self._canvas.setAuthor("Poutoux")
+        self._canvas.setTitle(title)
+        self._canvas.setSubject("Created for " + device)
     
     
-    def addImage(self, filename):
-        self.canvas.drawImage(filename, 0, 0, width=self._page_size[0], height=self._page_size[1], preserveAspectRatio=True, anchor='c')
-        self.canvas.showPage()
+    def add(self, filename):
+        # type: (str) -> None
+        self._canvas.drawImage(filename, 0, 0, width=self._page_size[0], height=self._page_size[1], preserveAspectRatio=True, anchor='c')
+        self._canvas.showPage()  # close page
     
     
     def __enter__(self):
@@ -46,8 +51,9 @@ class PDFImage(object):
     
     
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # type: (type, Exception, traceback) -> None
         self.close()
     
     
     def close(self):
-        self.canvas.save()
+        self._canvas.save()

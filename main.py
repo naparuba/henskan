@@ -25,7 +25,7 @@ sys.path.insert(0, mangle_dir)
 
 from PyQt6 import QtWidgets
 
-from mangle.book import MainWindowBook
+from mangle.ui_main import MainWindowBook
 
 application = QtWidgets.QApplication(sys.argv)
 

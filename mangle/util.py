@@ -1,4 +1,5 @@
-# Copyright (C) 2010  Alex Yatskov
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@ import re
 # characters, and manage multi levels of integers (tome 1/ page 1.jpg, etc etc)
 # cf: See http://www.codinghorror.com/blog/archives/001018.html
 def natural_key(string_):
+    # type: (str) -> list
     l = []
     for s in re.split(r'(\d+)', string_):
         if s.isdigit():
@@ -30,6 +32,8 @@ def natural_key(string_):
             l.append(s.lower())
     return l
 
+
 def get_ui_path(relative):
+    # type: (str) -> str
     my_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(my_dir, relative)

@@ -1,3 +1,5 @@
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 # Copyright (C) 2011  Marek Kubica <marek@xivilization.net>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,11 +17,13 @@
 
 
 import os.path
+import traceback
 from zipfile import ZipFile, ZIP_STORED
 
 
-class Archive(object):
+class ArchiveCBZ(object):
     def __init__(self, path):
+        # type: (str) -> None
         output_directory = os.path.dirname(path)
         output_file_name = '%s.cbz' % os.path.basename(path)
         output_path = os.path.join(output_directory, output_file_name)
@@ -27,6 +31,7 @@ class Archive(object):
     
     
     def add(self, filename):
+        # type: (str) -> None
         arcname = os.path.basename(filename)
         self._zipfile.write(filename, arcname)
     
@@ -36,6 +41,7 @@ class Archive(object):
     
     
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # type: (type, Exception, traceback) -> None
         self.close()
     
     

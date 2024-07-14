@@ -1,4 +1,5 @@
-# Copyright (C) 2010  Alex Yatskov
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -119,32 +120,36 @@ def protect_bad_image(func):
 
 @protect_bad_image
 def _split_left(image):
-    widthImg, heightImg = image.size
+    # type: (Image) -> Image
+    width_img, height_img = image.size
     
-    return image.crop((0, 0, widthImg // 2, heightImg))
+    return image.crop((0, 0, width_img // 2, height_img))
 
 
 @protect_bad_image
 def _split_right(image):
-    widthImg, heightImg = image.size
+    # type: (Image) -> Image
+    width_img, height_img = image.size
     
-    return image.crop((widthImg // 2, 0, widthImg, heightImg))
+    return image.crop((width_img // 2, 0, width_img, height_img))
 
 
 @protect_bad_image
 def _quantize_image(image, palette):
+    # type: (Image, list) -> Image
     colors = len(palette) // 3
     if colors < 256:
         palette = palette + palette[:3] * (256 - colors)
     
-    palImg = Image.new('P', (1, 1))
-    palImg.putpalette(palette)
+    pal_img = Image.new('P', (1, 1))
+    pal_img.putpalette(palette)
     
-    return image.quantize(palette=palImg)
+    return image.quantize(palette=pal_img)
 
 
 @protect_bad_image
 def _stretch_image(image, size):
+    # type: (Image, tuple[int, int]) -> Image
     width_device, height_device = size
     
     return image.resize((width_device, height_device), Image.Resampling.LANCZOS)
@@ -152,33 +157,35 @@ def _stretch_image(image, size):
 
 @protect_bad_image
 def _resize_image(image, size):
-    widthDev, heightDev = size
-    widthImg, heightImg = image.size
+    # type: (Image, tuple[int, int]) -> Image
+    width_dev, height_dev = size
+    width_img, height_img = image.size
     
-    if widthImg <= widthDev and heightImg <= heightDev:
+    if width_img <= width_dev and height_img <= height_dev:
         return image
     
-    ratioImg = float(widthImg) / float(heightImg)
-    ratioWidth = float(widthImg) / float(widthDev)
-    ratioHeight = float(heightImg) / float(heightDev)
+    ratio_img = float(width_img) / float(height_img)
+    ratio_width = float(width_img) / float(width_dev)
+    ratio_height = float(height_img) / float(height_dev)
     
-    if ratioWidth > ratioHeight:
-        widthImg = widthDev
-        heightImg = int(widthDev / ratioImg)
-    elif ratioWidth < ratioHeight:
-        heightImg = heightDev
-        widthImg = int(heightDev * ratioImg)
+    if ratio_width > ratio_height:
+        width_img = width_dev
+        height_img = int(width_dev / ratio_img)
+    elif ratio_width < ratio_height:
+        height_img = height_dev
+        width_img = int(height_dev * ratio_img)
     else:
-        widthImg, heightImg = size
+        width_img, height_img = size
     
     if DEBUG:
-        print(' * Resizing image from %s to %s/%s' % (image.size, widthImg, heightImg))
+        print(' * Resizing image from %s to %s/%s' % (image.size, width_img, height_img))
     
-    return image.resize((widthImg, heightImg), Image.Resampling.LANCZOS)
+    return image.resize((width_img, height_img), Image.Resampling.LANCZOS)
 
 
 @protect_bad_image
 def _format_image_to_rgb(image):
+    # type: (Image) -> Image
     if image.mode == 'RGB':
         return image
     
@@ -187,6 +194,7 @@ def _format_image_to_rgb(image):
 
 @protect_bad_image
 def _orient_image(image, device_size):
+    # type: (Image, tuple[int, int]) -> Image
     width_dev, height_dev = device_size
     width_img, height_img = image.size
     
@@ -200,6 +208,7 @@ def _orient_image(image, device_size):
 # by inverting colors, and asking a bounder box ^^
 @protect_bad_image
 def _blurauto_crop_image(image):
+    # type: (Image) -> Image
     orig_image = image
     power = 2.0  # mode: pifometre
     # work on a black image
@@ -215,6 +224,7 @@ def _blurauto_crop_image(image):
 
 
 def _find_dominant_color(img):
+    # type: (Image) -> int
     # Resizing parameters
     width, height = 150, 150
     img = img.resize((width, height), resample=0)
@@ -228,11 +238,13 @@ def _find_dominant_color(img):
 
 
 def _get_image_variance(image):
+    # type: (Image) -> float
     return ImageStat.Stat(image).var[0]
 
 
 @protect_bad_image
 def _auto_crop_image(image):
+    # type: (Image) -> Image
     fixed_threshold = 5.0
     
     before = time.time()
@@ -316,6 +328,7 @@ def _auto_crop_image(image):
 
 @protect_bad_image
 def _simple_crop_image(image):
+    # type: (Image) -> Image
     try:
         x0, y0, xend, yend = ImageChops.invert(image).getbbox()
     except TypeError:  # bad image, specific to chops
@@ -325,31 +338,32 @@ def _simple_crop_image(image):
 
 
 def _frame_image(image, foreground, background, size):
-    widthDev, heightDev = size
-    widthImg, heightImg = image.size
+    # type: (Image, tuple[int, int, int], tuple[int, int, int], tuple[int, int]) -> Image
+    width_dev, height_dev = size
+    width_img, height_img = image.size
     
-    pastePt = (
-        max(0, (widthDev - widthImg) // 2),
-        max(0, (heightDev - heightImg) // 2)
+    paste_pt = (
+        max(0, (width_dev - width_img) // 2),
+        max(0, (height_dev - height_img) // 2)
     )
     
     corner1 = (
-        pastePt[0] - 1,
-        pastePt[1] - 1
+        paste_pt[0] - 1,
+        paste_pt[1] - 1
     )
     
     corner2 = (
-        pastePt[0] + widthImg + 1,
-        pastePt[1] + heightImg + 1
+        paste_pt[0] + width_img + 1,
+        paste_pt[1] + height_img + 1
     )
     
-    imageBg = Image.new(image.mode, size, background)
-    imageBg.paste(image, pastePt)
+    image_bg = Image.new(image.mode, size, background)
+    image_bg.paste(image, paste_pt)
     
-    draw = ImageDraw.Draw(imageBg)
+    draw = ImageDraw.Draw(image_bg)
     draw.rectangle([corner1, corner2], outline=foreground)
     
-    return imageBg
+    return image_bg
 
 
 QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
@@ -357,6 +371,7 @@ QUITE_BLACK_LIMIT = 25  # 25: totally my choice after look at colors ^^
 
 # Can be black is really black, or just VERY dark
 def _is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
+    # type: (tuple[int, int, int], int) -> bool
     if pixel == (0, 0, 0):
         return True
     if pixel[0] <= precision and pixel[1] <= precision and pixel[2] <= precision:
@@ -365,6 +380,7 @@ def _is_quite_black(pixel, precision=QUITE_BLACK_LIMIT):
 
 
 def _is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
+    # type: (tuple[int, int, int], int) -> bool
     if pixel == (255, 255, 255):
         return True
     if pixel[0] >= 255 - precision and pixel[1] >= 255 - precision and pixel[2] >= 255 - precision:
@@ -373,6 +389,7 @@ def _is_quite_white(pixel, precision=QUITE_BLACK_LIMIT):
 
 
 def _is_background_pixel(pixel, is_black_background):
+    # type: (tuple[int, int, int], bool) -> bool
     if is_black_background:
         return _is_quite_black(pixel, precision=10)
     return _is_quite_white(pixel, precision=10)
@@ -388,10 +405,12 @@ HARD_MAX_BLOC_HEIGHT = 3000  # if higher than this, stop the block
 
 
 def __get_image_height(image):
+    # type: (Image) -> int
     return image.size[1]
 
 
 def __get_image_width(image):
+    # type: (Image) -> int
     return image.size[0]
 
 
@@ -400,6 +419,7 @@ WHITE_PIXEL = (255, 255, 255)
 
 # Remove images that are full white or full black
 def _is_full_background_image(image):
+    # type: (Image) -> bool
     precision = 5
     image_rgb = image.convert('RGB')
     height = __get_image_height(image)
@@ -436,6 +456,7 @@ def _is_full_background_image(image):
 
 
 def __fail_back_to_cut_very_big_one(image):
+    # type: (Image) -> list[Image]
     image_height = __get_image_height(image)
     image_width = __get_image_width(image)
     print("__fail_back_to_cut_very_big_one:: %s" % image_height)
@@ -455,6 +476,7 @@ def __fail_back_to_cut_very_big_one(image):
 # We have a block image that is too big, try to see if with linear cut it's possible to
 # have more parts
 def __try_to_smart_split_block(image, is_black_background, level=1):
+    # type: (Image, bool, int) -> list[Image]
     image = _simple_crop_image(image)
     if DEBUG:
         image.save('tmp/input_%s.jpg' % level)
@@ -597,6 +619,7 @@ def __try_to_smart_split_block(image, is_black_background, level=1):
 
 
 def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_images, is_black_background):
+    # type: (Image, int, int, int, list[Image], bool) -> None
     from similarity import similarity
     box_image = image.crop((0, start_of_box, width, end_of_box))
     
@@ -637,6 +660,7 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
 
 
 def _split_webtoon(image):
+    # type: (Image) -> list[Image]
     split_images = []
     width, height = image.size
     
@@ -733,6 +757,7 @@ def _split_webtoon(image):
 
 
 def _load_image(source):
+    # type: (str) -> Image
     try:
         return Image.open(source)
     except IOError:
@@ -740,6 +765,7 @@ def _load_image(source):
 
 
 def save_image(image, target):
+    # type: (Image, str) -> None
     try:
         image.save(target)
     except IOError:
@@ -750,6 +776,7 @@ def save_image(image, target):
 # it's should not be split (like the front page of a manga,
 # when all the inner pages are double)
 def is_splitable(source):
+    # type: (str) -> bool
     image = _load_image(source)
     try:
         width, height = image.size
@@ -759,6 +786,7 @@ def is_splitable(source):
 
 
 def convert_image(source, target, device, flags):
+    # type: (str, str, str, int) -> list[Image]
     try:
         size, palette = EReaderData.Profiles[device]
     except KeyError:

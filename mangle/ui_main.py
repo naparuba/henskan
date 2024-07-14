@@ -1,4 +1,5 @@
-# Copyright (C) 2010  Alex Yatskov
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 from os.path import basename
 import os.path
 import tempfile
@@ -23,29 +23,11 @@ import hashlib
 from PyQt6 import QtGui, QtWidgets, QtCore, uic
 from PyQt6.QtCore import Qt
 
-from .about import DialogAbout
+from .parameters import parameters, Parameters
+from .ui_about import DialogAbout
 from .convert import DialogConvert
-from .image import ImageFlags
-from .options import DialogOptions
+from .ui_options import DialogOptions
 from .util import get_ui_path, natural_key
-
-
-class Book(object):
-    DefaultDevice = 'Kobo Aura H2O'
-    DefaultOutputFormat = 'CBZ only'
-    DefaultOverwrite = True
-    DefaultImageFlags = ImageFlags.Orient | ImageFlags.Resize | ImageFlags.Quantize | ImageFlags.AutoCrop
-    
-    
-    def __init__(self):
-        self.images = []
-        self.filename = None
-        self.title = None
-        self.titleSet = False
-        self.device = self.DefaultDevice
-        self.overwrite = self.DefaultOverwrite
-        self.imageFlags = self.DefaultImageFlags
-        self.outputFormat = self.DefaultOutputFormat
 
 
 class MainWindowBook(QtWidgets.QMainWindow):
@@ -76,7 +58,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         
         self.listWidgetFiles.itemDoubleClicked.connect(self._on_double_click)
         
-        self._book = Book()
+        self._book = parameters
     
     
     def dragEnterEvent(self, event):
@@ -105,7 +87,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def onFileNew(self):
-        self._book = Book()
+        self._book.clean()
         self.listWidgetFiles.clear()
     
     

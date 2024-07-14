@@ -1,4 +1,5 @@
-# Copyright (C) 2010  Alex Yatskov
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,15 +23,23 @@ import traceback
 from PyQt6 import QtWidgets, QtCore
 
 from .image import ImageFlags, convert_image, save_image, is_splitable
-from .cbz import Archive as CBZArchive
-from .pdfimage import PDFImage
+from .archive_cbz import ArchiveCBZ
+from .archive_pdf import ArchivePDF
+
+from .parameters import parameters
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .parameters import Parameters
 
 
 class DialogConvert(QtWidgets.QProgressDialog):
     def __init__(self, parent, book, directory):
+        # type: (QtWidgets.QWidget, Parameters, str) -> None
         super().__init__(parent)
         
-        self.book = book
+        self.book = parameters
         self.bookPath = os.path.join(str(directory), str(self.book.title))
         
         self.timer = None
@@ -41,22 +50,24 @@ class DialogConvert(QtWidgets.QProgressDialog):
         
         self.archive = None
         if 'CBZ' in self.book.outputFormat:
-            self.archive = CBZArchive(self.bookPath)
+            self.archive = ArchiveCBZ(self.bookPath)
         
         self.pdf = None
         if "PDF" in self.book.outputFormat:
-            self.pdf = PDFImage(self.bookPath, str(self.book.title), str(self.book.device))
+            self.pdf = ArchivePDF(self.bookPath, str(self.book.title), str(self.book.device))
     
     
     def showEvent(self, event):
+        # type: (QtWidgets.QShowEvent) -> None
         if self.timer is None:
             self.timer = QtCore.QTimer()
             self.timer.timeout.connect(self._on_timer)
             self.timer.start(0)
     
     
+    # Called when the dialog finishes processing.
     def hideEvent(self, event):
-        """Called when the dialog finishes processing."""
+        # type: (QtWidgets.QHideEvent) -> None
         
         # Close the archive if we created a CBZ file
         if self.archive is not None:
@@ -71,12 +82,11 @@ class DialogConvert(QtWidgets.QProgressDialog):
     
     
     def convertAndSave(self, source, target, device, flags, archive, pdf):
+        # type: (str, str, str, int, ArchiveCBZ, ArchivePDF) -> None
         begin = time.time()
         converted_images = convert_image(source, target, device, flags)
-        try:
-            print("* convert for %s => %s" % (target, converted_images))
-        except LookupError:  # bad encoding?
-            pass
+        print(f"* convert for {target} => {len(converted_images)}")
+        
         # If we have only one image, we can directly use the target
         if len(converted_images) == 1:
             try:
@@ -87,7 +97,7 @@ class DialogConvert(QtWidgets.QProgressDialog):
             if archive is not None:
                 archive.add(target)
             if pdf is not None:
-                pdf.addImage(target)
+                pdf.add(target)
         else:
             print("* convert2 for %s => %s" % (target, converted_images))
             base_target = target.replace('.png', '')
@@ -102,18 +112,16 @@ class DialogConvert(QtWidgets.QProgressDialog):
                 if archive is not None:
                     archive.add(n_target)
                 if pdf is not None:
-                    pdf.addImage(n_target)
-        try:
-            print(" * Convert & save in %.3fs for %s" % (time.time() - begin, target))
-        except LookupError:  # bad encoding
-            pass
+                    pdf.add(n_target)
+        
+        print(f" * Convert & save in {time.time() - begin:.3f}s for {target}")
     
     
     def _on_timer(self):
         index = self.value()
         pages_split = self.increment
         target = os.path.join(self.bookPath, '%05d.png' % (index + pages_split))
-        source = str(self.book.images[index])
+        source = self.book.images[index]
         
         if index == 0:
             try:
@@ -123,27 +131,6 @@ class DialogConvert(QtWidgets.QProgressDialog):
                 QtWidgets.QMessageBox.critical(self, 'Mangle', 'Cannot create directory %s' % self.bookPath)
                 self.close()
                 return
-            
-            try:
-                base = os.path.join(self.bookPath, str(self.book.title))
-                
-                mangaName = base + '.manga'
-                if self.book.overwrite or not os.path.isfile(mangaName):
-                    manga = open(mangaName, 'w')
-                    manga.write('\x00')
-                    manga.close()
-                
-                mangaSaveName = base + '.manga_save'
-                if self.book.overwrite or not os.path.isfile(mangaSaveName):
-                    mangaSave = open(base + '.manga_save', 'w')
-                    saveData = u'LAST=/mnt/us/pictures/%s/%s' % (self.book.title, os.path.split(target)[1])
-                    mangaSave.write(saveData.encode('utf-8').decode())
-                    mangaSave.close()
-            
-            except IOError:
-                QtWidgets.QMessageBox.critical(self, 'Mangle', 'Cannot write manga file(s) to directory %s' % self.bookPath)
-                self.close()
-                return False
         
         self.setLabelText('Processing %s...' % os.path.split(source)[1])
         
@@ -158,9 +145,9 @@ class DialogConvert(QtWidgets.QProgressDialog):
                 if (flags & ImageFlags.SplitRightLeft) or (flags & ImageFlags.SplitLeftRight):
                     if not is_splitable(source):
                         # remove split flags
-                        splitFlags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
-                                      ImageFlags.SplitLeft]
-                        for f in splitFlags:
+                        split_flags = [ImageFlags.SplitRightLeft, ImageFlags.SplitLeftRight, ImageFlags.SplitRight,
+                                       ImageFlags.SplitLeft]
+                        for f in split_flags:
                             flags &= ~f
                 
                 # For right page (if requested in options and need for this image)

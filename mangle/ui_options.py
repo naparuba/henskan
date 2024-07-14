@@ -1,4 +1,5 @@
-# Copyright (C) 2010  Alex Yatskov
+# Copyright 2011-2019 Alex Yatskov
+# Copyright 2020+     Gabès Jean (naparuba@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,16 +19,30 @@ from PyQt6 import QtWidgets, uic
 
 from .image import ImageFlags
 from .util import get_ui_path
+from .parameters import parameters
 
 
 class DialogOptions(QtWidgets.QDialog):
+    lineEditTitle: QtWidgets.QLineEdit
+    comboBoxDevice: QtWidgets.QComboBox
+    comboBoxFormat: QtWidgets.QComboBox
+    checkboxOverwrite: QtWidgets.QCheckBox
+    checkboxOrient: QtWidgets.QCheckBox
+    checkboxResize: QtWidgets.QCheckBox
+    checkboxStretch: QtWidgets.QCheckBox
+    checkboxQuantize: QtWidgets.QCheckBox
+    checkboxFrame: QtWidgets.QCheckBox
+    checkboxAutoCrop: QtWidgets.QCheckBox
+    checkboxWebtoon: QtWidgets.QCheckBox
+    
+    
     def __init__(self, parent, book):
         super().__init__(parent)
         
         uic.loadUi(get_ui_path('ui/options.ui'), self)
         self.accepted.connect(self.onAccept)
         
-        self.book = book
+        self.book = parameters
         self.moveOptionsToDialog()
     
     
