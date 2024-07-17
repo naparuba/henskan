@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="title_block">
      <property name="title">
       <string>Book</string>
      </property>
@@ -37,7 +37,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="export_block">
      <property name="title">
       <string>Export</string>
      </property>
@@ -148,13 +148,6 @@
        <widget class="QCheckBox" name="checkboxWebtoon">
         <property name="text">
          <string>Is a Webtoon (split in N images)</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Size</string>
         </property>
        </widget>
       </item>

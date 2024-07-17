@@ -29,6 +29,8 @@ class Parameters(object):
     _split_right_then_left = False
     _split_left_then_right = False
     
+    _output_directory: str
+    
     
     def __init__(self):
         self.clean()
@@ -43,6 +45,16 @@ class Parameters(object):
         self._split_left_then_right = False
         self._split_left_then_right = False
         self._is_webtoon = False
+        
+        self._output_directory = ''
+    
+    
+    def get_output_directory(self):
+        return self._output_directory
+    
+    
+    def set_output_directory(self, output_directory):
+        self._output_directory = output_directory
     
     
     def set_title(self, title):

@@ -23,7 +23,7 @@ import hashlib
 from PyQt6 import QtGui, QtWidgets, QtCore, uic
 from PyQt6.QtCore import Qt
 
-from .parameters import parameters, Parameters
+from .parameters import parameters
 from .ui_about import DialogAbout
 from .convert import DialogConvert
 from .ui_options import DialogOptions
@@ -31,35 +31,75 @@ from .util import get_ui_path, natural_key
 
 
 class MainWindowBook(QtWidgets.QMainWindow):
-    listWidgetFiles = None  # type: QtWidgets.QListWidget
-    actionFileNew = None  # type: QtWidgets.QAction
-    actionBookOptions = None  # type: QtWidgets.QAction
-    actionBookShiftUp = None  # type: QtWidgets.QAction
-    actionBookShiftDown = None  # type: QtWidgets.QAction
-    actionBookRemove = None  # type: QtWidgets.QAction
-    actionBookExport = None  # type: QtWidgets.QAction
-    actionHelpAbout = None  # type: QtWidgets.QAction
-    actionHelpHomepage = None  # type: QtWidgets.QAction
+    widget_list_files: QtWidgets.QListWidget
+    actionFileNew: QtGui.QAction
+    actionBookOptions: QtGui.QAction
+    actionBookShiftUp: QtGui.QAction
+    actionBookShiftDown: QtGui.QAction
+    actionBookRemove: QtGui.QAction
+    actionBookExport: QtGui.QAction
+    actionHelpAbout: QtGui.QAction
+    actionHelpHomepage: QtGui.QAction
+    export_button: QtWidgets.QPushButton
+    
+    # Parameters
+    edit_line: QtWidgets.QLineEdit
+    checkbox_webtoon: QtWidgets.QCheckBox
+    checkbox_split_right_left: QtWidgets.QCheckBox
+    checkbox_split_left_right: QtWidgets.QCheckBox
+    device_select: QtWidgets.QComboBox
     
     
     def __init__(self):
         super().__init__()
         
         uic.loadUi(get_ui_path('ui/book.ui'), self)
-        self.listWidgetFiles.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # self.widget_list_files.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.actionFileNew.triggered.connect(self.onFileNew)
         self.actionBookOptions.triggered.connect(self._show_options)
         self.actionBookShiftUp.triggered.connect(self._shift_up)
         self.actionBookShiftDown.triggered.connect(self._shift_down)
         self.actionBookRemove.triggered.connect(self._delete_items)
         self.actionBookExport.triggered.connect(self._do_export)
+        self.export_button.clicked.connect(self._do_export)
         self.actionHelpAbout.triggered.connect(self._show_about)
         self.actionHelpHomepage.triggered.connect(self._open_homepage)
         
-        self.listWidgetFiles.itemDoubleClicked.connect(self._on_double_click)
+        self.widget_list_files.itemDoubleClicked.connect(self._on_double_click)
         
-        self._book = parameters
+        # Read parameters
+        # Title
+        self.edit_line.setPlaceholderText("Set the title here")
+        self.edit_line.textChanged.connect(self._on_title_change)
+        # Webtoon
+        self.checkbox_webtoon.stateChanged.connect(self._on_webtoon_change)
+        # Split
+        self.checkbox_split_right_left.stateChanged.connect(self._on_split_right_left_change)
+        self.checkbox_split_left_right.stateChanged.connect(self._on_split_left_right_change)
+        # Device
+        self.device_select.currentIndexChanged.connect(self._on_device_change)
+        
     
+    
+    def _on_title_change(self, new_title):
+        parameters.set_title(new_title)
+        
+    def _on_webtoon_change(self, state):
+        print(f'_on_webtoon_change:: {state=}')
+        parameters.set_is_webtoon(state == Qt.CheckState.Checked)
+        
+    def _on_split_right_left_change(self, state):
+        print(f'_on_split_right_left_change:: {state=}')
+        parameters.set_split_right_then_left(state == Qt.CheckState.Checked)
+        
+    def _on_split_left_right_change(self, state):
+        print(f'_on_split_left_right_change:: {state=}')
+        parameters.set_split_left_then_right(state == Qt.CheckState.Checked)
+        
+    def _on_device_change(self, index):
+        print(f'_on_device_change:: {index=} {self.device_select.currentText()}')
+        parameters.set_device(self.device_select.currentText())
+        
     
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -87,8 +127,8 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def onFileNew(self):
-        self._book.clean()
-        self.listWidgetFiles.clear()
+        parameters.clean()
+        self.widget_list_files.clear()
     
     
     def _on_double_click(self, item):
@@ -105,10 +145,10 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def _delete_items(self):
-        for item in self.listWidgetFiles.selectedItems():
-            row = self.listWidgetFiles.row(item)
-            self.listWidgetFiles.takeItem(row)
-            self._book.images.remove(item.text())
+        for item in self.widget_list_files.selectedItems():
+            row = self.widget_list_files.row(item)
+            self.widget_list_files.takeItem(row)
+            parameters.images.remove(item.text())
     
     
     def _show_options(self):
@@ -117,14 +157,14 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def _do_export(self):
-        if len(self._book.images) == 0:
+        if len(parameters.images) == 0:
             QtWidgets.QMessageBox.warning(self, 'Mangle', 'This book has no images to export')
             return
         
-        if not self._book.is_title_set():
+        if not parameters.is_title_set():
             dialog = DialogOptions(self)
             dialog.exec()
-            if not self._book.is_title_set():
+            if not parameters.is_title_set():
                 return
         
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select a directory to export book to')
@@ -147,26 +187,26 @@ class MainWindowBook(QtWidgets.QMainWindow):
     def _shift_image_file(self, row, delta):
         # type: (int, int) -> None
         _valid_shift = (
-                (delta > 0 and row < self.listWidgetFiles.count() - delta) or
+                (delta > 0 and row < self.widget_list_files.count() - delta) or
                 (delta < 0 and row >= abs(delta))
         )
         if not _valid_shift:
             return
         
-        item = self.listWidgetFiles.takeItem(row)
+        item = self.widget_list_files.takeItem(row)
         
-        self.listWidgetFiles.insertItem(row + delta, item)
-        self.listWidgetFiles.setCurrentItem(item)
+        self.widget_list_files.insertItem(row + delta, item)
+        self.widget_list_files.setCurrentItem(item)
         
-        self._book.images[row], self._book.images[row + delta] = (
-            self._book.images[row + delta], self._book.images[row]
+        parameters.images[row], parameters.images[row + delta] = (
+            parameters.images[row + delta], parameters.images[row]
         )
     
     
     def _shift_image_files(self, delta):
         # type: (int) -> None
-        items = self.listWidgetFiles.selectedItems()
-        rows = sorted([self.listWidgetFiles.row(item) for item in items])
+        items = self.widget_list_files.selectedItems()
+        rows = sorted([self.widget_list_files.row(item) for item in items])
         
         for row in rows if delta < 0 else reversed(rows):
             self._shift_image_file(row, delta)
@@ -180,7 +220,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         _idx_to_delete = []
         
         # First look at same size
-        for idx, filename in enumerate(self._book.images):
+        for idx, filename in enumerate(parameters.images):
             size = os.path.getsize(filename)
             # print "File: %s => %s " % (filename, size)
             if size not in file_by_sizes:
@@ -209,27 +249,27 @@ class MainWindowBook(QtWidgets.QMainWindow):
         
         # Now clean duplicate images
         if _idx_to_delete:
-            print("We will clean a total of %s of %s images" % (len(_idx_to_delete), len(self._book.images)))
+            print("We will clean a total of %s of %s images" % (len(_idx_to_delete), len(parameters.images)))
             # We need to remove by the end
             _idx_to_delete.sort()
             _idx_to_delete.reverse()
             for idx in _idx_to_delete:
-                self._book.images.pop(idx)
-                self.listWidgetFiles.takeItem(idx)
+                parameters.images.pop(idx)
+                self.widget_list_files.takeItem(idx)
     
     
     def _add_image_files(self, filenames):
         # type: (list[str]) -> None
         filenames_listed = []
-        for i in range(0, self.listWidgetFiles.count()):
-            filenames_listed.append(self.listWidgetFiles.item(i).text())
+        for i in range(0, self.widget_list_files.count()):
+            filenames_listed.append(self.widget_list_files.item(i).text())
         
         print(f'addImageFiles:: filenames: {filenames}')
         # Get files but in a natural sorted order
         for filename in sorted(filenames, key=natural_key):
             if filename not in filenames_listed:
-                self.listWidgetFiles.addItem(filename)
-                self._book.images.append(filename)
+                self.widget_list_files.addItem(filename)
+                parameters.images.append(filename)
         
         self._clean_duplicates()
     
@@ -254,8 +294,8 @@ class MainWindowBook(QtWidgets.QMainWindow):
         filenames.sort()
         
         filenames_listed = []
-        for i in range(0, self.listWidgetFiles.count()):
-            filenames_listed.append(self.listWidgetFiles.item(i).text())
+        for i in range(0, self.widget_list_files.count()):
+            filenames_listed.append(self.widget_list_files.item(i).text())
         
         for filename in filenames:
             folder_name = os.path.splitext(basename(filename))[0]
