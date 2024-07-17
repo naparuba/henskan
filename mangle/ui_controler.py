@@ -1,12 +1,15 @@
+import os
 import sys
+from typing import LiteralString
 
-from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QAbstractListModel, pyqtProperty, QModelIndex, QStringListModel
+from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QAbstractListModel, pyqtProperty, QModelIndex, QStringListModel, QThread
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtWidgets import QApplication, QFileDialog
 from PyQt6.QtQml import QQmlApplicationEngine
 from PyQt6.QtCore import Qt
 
 from mangle.parameters import parameters
+from mangle.worker import Worker
 
 
 class Backend(QObject):
@@ -38,14 +41,44 @@ class Backend(QObject):
         parameters.set_title(text)
     
     
+    @staticmethod
+    def __get_file_extension(filename):
+        # type: (LiteralString | str| bytes) -> str
+        return os.path.splitext(filename)[1].lower()
+    
+    
+    def _is_image_file(self, filename):
+        # type: (LiteralString | str | bytes) -> bool
+        image_exts = ('.jpeg', '.jpg', '.gif', '.png')
+        
+        return os.path.isfile(filename) and self.__get_file_extension(filename) in image_exts
+    
+    
     @pyqtSlot(str)
     def onFilesDropped(self, file_url_str):
-        print(f"File dropped: ZZ{file_url_str}ZZ")
+        print(f"File dropped: ZZ{file_url_str}ZZ  {type(file_url_str)}")
         
         file_paths = file_url_str.split("\n")
         for file_path in file_paths:
-            if file_path:
+            file_path = file_path.strip().replace("file:///", "", 1)
+            print(f'onFilesDropped::File path: {file_path}')
+            if not file_path:
+                continue
+            if self._is_image_file(file_path):
                 self.add_file_path(file_path, 0.33)
+            elif os.path.isdir(file_path):
+                self._add_directory(file_path)
+                
+        print(f"onFilesDropped::Finished adding files")
+
+    
+    
+    def _add_directory(self, directory):
+        for root, _, subfiles in os.walk(directory):
+            for filename in subfiles:
+                file_path = os.path.join(root, filename)
+                if self._is_image_file(file_path):
+                    self.add_file_path(file_path, 0.33)
     
     
     @pyqtSlot()
@@ -84,12 +117,29 @@ class Backend(QObject):
     @pyqtSlot()
     def onConvertClicked(self):
         print("Submit button clicked")
-        root_objects = self.engine.rootObjects()
-        if root_objects:
-            root_object = root_objects[0]
-            title_input = root_object.findChild(QObject, "titleInput")
-            if title_input:
-                title_input.setProperty("enabled", False)
+        
+        self.thread = QThread()
+        self.worker = Worker()
+        self.worker.moveToThread(self.thread)
+        self.worker.updateProgress.connect(self.updateProgressBar)
+        self.thread.started.connect(self.worker.run)
+        self.thread.start()
+    
+    
+    @pyqtSlot(int)
+    def updateProgressBar(self, value):
+        print(f'Backend::updateProgressBar:: Progress: {value}')
+        # Find the ProgressBar QML object by its objectName
+        progressBar = self._find_child(self.engine.rootObjects()[0], "progress_bar")
+        if progressBar:
+            # Update the value of the ProgressBar
+            progressBar.setProperty("value", value)
+        # root_objects = self.engine.rootObjects()
+        # if root_objects:
+        #     root_object = root_objects[0]
+        #     title_input = root_object.findChild(QObject, "titleInput")
+        #     if title_input:
+        #         title_input.setProperty("enabled", False)
     
     
     @pyqtSlot(str)

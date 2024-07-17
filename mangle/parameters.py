@@ -19,7 +19,7 @@ class Parameters(object):
     DefaultDevice = 'Kobo Libra H2O'
     DefaultTitle = 'Untitled'
     
-    images: list[str]
+    _images: list[str]
     
     _title: str
     _device: str
@@ -37,7 +37,7 @@ class Parameters(object):
     
     
     def clean(self):
-        self.images = []
+        self._images = []
         
         self._title = self.DefaultTitle
         self._device = self.DefaultDevice
@@ -101,6 +101,15 @@ class Parameters(object):
     def set_split_right_then_left(self, b):
         # type: (bool) -> None
         self._split_right_then_left = b
+    
+    
+    def add_image(self, image_path):
+        self._images.append(image_path)
+        print(f'Parameters:: Added image: {image_path} (current size: {len(self._images)})')
+    
+    
+    def get_images(self):
+        return self._images
 
 
 parameters = Parameters()

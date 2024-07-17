@@ -20,6 +20,7 @@ ApplicationWindow {
         Row {
             spacing: 10
             Text {
+                color: "white"
                 text: full_path
             }
             Text {
@@ -27,6 +28,16 @@ ApplicationWindow {
             }
         }
     }
+
+    // PROGRESS BAR
+    function updateProgressBar(value) {
+        progress_bar.value = value
+    }
+
+    Component.onCompleted: {
+        backend.worker.updateProgress.connect(updateProgressBar)
+    }
+
 
     RowLayout {
         anchors.fill: parent
@@ -225,11 +236,12 @@ ApplicationWindow {
 
 
             ProgressBar {
-                id: progressBar
+                id: progress_bar
+                objectName: "progress_bar"
                 width: parent.width
                 from: 0
                 to: 100
-                value: 50  // Set initial value
+                value: 0  // Set initial value
             }
         }
     }

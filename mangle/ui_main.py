@@ -78,28 +78,31 @@ class MainWindowBook(QtWidgets.QMainWindow):
         self.checkbox_split_left_right.stateChanged.connect(self._on_split_left_right_change)
         # Device
         self.device_select.currentIndexChanged.connect(self._on_device_change)
-        
     
     
     def _on_title_change(self, new_title):
         parameters.set_title(new_title)
-        
+    
+    
     def _on_webtoon_change(self, state):
         print(f'_on_webtoon_change:: {state=}')
         parameters.set_is_webtoon(state == Qt.CheckState.Checked)
-        
+    
+    
     def _on_split_right_left_change(self, state):
         print(f'_on_split_right_left_change:: {state=}')
         parameters.set_split_right_then_left(state == Qt.CheckState.Checked)
-        
+    
+    
     def _on_split_left_right_change(self, state):
         print(f'_on_split_left_right_change:: {state=}')
         parameters.set_split_left_then_right(state == Qt.CheckState.Checked)
-        
+    
+    
     def _on_device_change(self, index):
         print(f'_on_device_change:: {index=} {self.device_select.currentText()}')
         parameters.set_device(self.device_select.currentText())
-        
+    
     
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -148,7 +151,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         for item in self.widget_list_files.selectedItems():
             row = self.widget_list_files.row(item)
             self.widget_list_files.takeItem(row)
-            parameters.images.remove(item.text())
+            parameters._images.remove(item.text())
     
     
     def _show_options(self):
@@ -157,7 +160,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
     
     
     def _do_export(self):
-        if len(parameters.images) == 0:
+        if len(parameters._images) == 0:
             QtWidgets.QMessageBox.warning(self, 'Mangle', 'This book has no images to export')
             return
         
@@ -198,8 +201,8 @@ class MainWindowBook(QtWidgets.QMainWindow):
         self.widget_list_files.insertItem(row + delta, item)
         self.widget_list_files.setCurrentItem(item)
         
-        parameters.images[row], parameters.images[row + delta] = (
-            parameters.images[row + delta], parameters.images[row]
+        parameters._images[row], parameters._images[row + delta] = (
+            parameters._images[row + delta], parameters._images[row]
         )
     
     
@@ -220,7 +223,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         _idx_to_delete = []
         
         # First look at same size
-        for idx, filename in enumerate(parameters.images):
+        for idx, filename in enumerate(parameters._images):
             size = os.path.getsize(filename)
             # print "File: %s => %s " % (filename, size)
             if size not in file_by_sizes:
@@ -249,12 +252,12 @@ class MainWindowBook(QtWidgets.QMainWindow):
         
         # Now clean duplicate images
         if _idx_to_delete:
-            print("We will clean a total of %s of %s images" % (len(_idx_to_delete), len(parameters.images)))
+            print("We will clean a total of %s of %s images" % (len(_idx_to_delete), len(parameters._images)))
             # We need to remove by the end
             _idx_to_delete.sort()
             _idx_to_delete.reverse()
             for idx in _idx_to_delete:
-                parameters.images.pop(idx)
+                parameters._images.pop(idx)
                 self.widget_list_files.takeItem(idx)
     
     
@@ -269,7 +272,7 @@ class MainWindowBook(QtWidgets.QMainWindow):
         for filename in sorted(filenames, key=natural_key):
             if filename not in filenames_listed:
                 self.widget_list_files.addItem(filename)
-                parameters.images.append(filename)
+                parameters._images.append(filename)
         
         self._clean_duplicates()
     
