@@ -134,7 +134,8 @@ class Worker(QObject):
         if self._archive is not None:
             self._archive.close()
         
-        print(f'Cleaning temporary directory {self._book_path}')
-        shutil.rmtree(self._book_path)
+        if os.path.exists(self._book_path):
+            print(f'Cleaning temporary directory {self._book_path}')
+            shutil.rmtree(self._book_path)
         
         print(f'Worker::run::Exiting')

@@ -5,6 +5,7 @@ import QtQuick.Layouts 1.15
 import QtQuick.Dialogs
 
 
+
 ApplicationWindow {
     visible: true
     width: 840
@@ -90,15 +91,17 @@ ApplicationWindow {
         ColumnLayout {
             spacing: 10
 
-            // Part that select between Manga and Webtoon
             RowLayout {
                 Rectangle {  // Is a Manga
+                    id: manga_rectangle
+                    objectName: "manga_rectangle"
                     width: 64
                     height: 64
-                    color: "green"
+                    color: "green"  // enable by default
                     Button {
                         anchors.fill: parent
                         Image {
+                            id: manga_button_image
                             anchors.fill: parent
                             source: "mangle/img/manga.png"
                         }
@@ -108,9 +111,11 @@ ApplicationWindow {
                     }
                 }
                 Rectangle {  // Is a Webtoon
+                    id: webtoon_rectangle
+                    objectName: "webtoon_rectangle"
                     width: 64
                     height: 64
-                    color: "yellow"
+                    color: "grey"
                     Button {
                         anchors.fill: parent
                         Image {
@@ -134,9 +139,11 @@ ApplicationWindow {
             // Split line
             RowLayout {
                 Rectangle {  // No split
+                    id: no_split_rectangle
+                    objectName: "no_split_rectangle"
                     width: 64
                     height: 96
-                    color: "blue"
+                    color: "green"
                     Button {
                         anchors.fill: parent
                         Image {
@@ -149,9 +156,11 @@ ApplicationWindow {
                     }
                 }
                 Rectangle {  // Split left then right
+                    id: split_left_right_rectangle
+                    objectName: "split_left_right_rectangle"
                     width: 64
                     height: 96
-                    color: "purple"
+                    color: "grey"
                     Button {
                         anchors.fill: parent
                         Image {
@@ -159,11 +168,13 @@ ApplicationWindow {
                             source: "mangle/img/split-left-right.png"
                         }
                         onClicked: {
-                            backend.onButtonSplitRightThenLeft()
+                            backend.onButtonSplitLeftThenRight()
                         }
                     }
                 }
                 Rectangle {// Split right then left
+                    objectName: "split_right_left_rectangle"
+                    id: split_right_left_rectangle
                     width: 64
                     height: 96
                     color: "grey"
@@ -174,7 +185,7 @@ ApplicationWindow {
                             source: "mangle/img/split-right-left.png"
                         }
                         onClicked: {
-                            backend.onButtonSplitLeftThenRight()
+                            backend.onButtonSplitRightThenLeft()
                         }
                     }
                 }
@@ -210,12 +221,14 @@ ApplicationWindow {
             // TITLE
             RowLayout {
                 TextField {
-                    id: titleInput
+                    id: title_input
+                    objectName: "title_input"
                     Layout.fillWidth: true
-                    //focus: true   // focus at start?
                     placeholderText: "Enter title..."
+                    color: "white"
+                    placeholderTextColor : "red"  // by default not set, will be green when set
                     onTextChanged: {
-                        backend.onTitleChanged(titleInput.text)
+                        backend.onTitleChanged(title_input.text)
                     }
                 }
             }
@@ -230,18 +243,21 @@ ApplicationWindow {
             // Output
             RowLayout {
                 Button {
-                    text: "Select Directory"
+                    text: "⇓"
                     onClicked: {
                         backend.selectOutputDirectory()
                     }
                 }
 
                 TextField {
-                    id: output_directory
-                    width: parent.width
+                    id: output_directory_input
+                    objectName: "output_directory_input"
+                    //width: parent.width
+                    Layout.fillWidth: true
                     readOnly: true
-                    //text: selectedDirectoryText
+                    color : "white"
                     placeholderText: "Selected Directory"
+                    placeholderTextColor : "red"  // by default not set, will be green when set
                 }
             }
 
@@ -253,12 +269,12 @@ ApplicationWindow {
             Rectangle { // Convert button
                 width: 128
                 height: 128
-                color: "green"
+                //color: "green"
                 Button {
                     anchors.fill: parent
                     Image {
                         anchors.fill: parent
-                        source: "mangle/img/manga.png"
+                        source: "mangle/img/shock_off.png"
                     }
                     onClicked: {
                         backend.onConvertClicked()

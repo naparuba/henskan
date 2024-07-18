@@ -66,8 +66,9 @@ class DialogConvert(QtWidgets.QProgressDialog):
         if self._archive is not None:
             self._archive.close()
         
-        print(f'Cleaning temporary directory {self._book_path}')
-        shutil.rmtree(self._book_path)
+        if os.path.exists(self._book_path):
+            print(f'Cleaning temporary directory {self._book_path}')
+            shutil.rmtree(self._book_path)
     
     
     def _convert_and_save(self, source, target, split_right=False, split_left=False):

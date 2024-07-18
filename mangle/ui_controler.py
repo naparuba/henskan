@@ -35,10 +35,20 @@ class Backend(QObject):
         return None
     
     
+    def _find_dom_id(self, dom_id):
+        root_objects = self.engine.rootObjects()
+        if root_objects:
+            return self._find_child(root_objects[0], dom_id)
+        return None
+    
     @pyqtSlot(str)
     def onTitleChanged(self, text):
         print(f"Title changed: {text}")
         parameters.set_title(text)
+        
+        color = 'red' if not text else 'green'
+        self._set_placeholder_color('title_input', color)
+
     
     
     @staticmethod
@@ -81,16 +91,38 @@ class Backend(QObject):
                     self.add_file_path(file_path, 0.33)
     
     
+    def _set_color(self, dom_id, color):
+        # type: (str, str) -> None
+        obj = self._find_dom_id(dom_id)
+        if obj:
+            obj.setProperty("color", color)
+    
+    def _set_placeholder_color(self, dom_id, color):
+        # type: (str, str) -> None
+        obj = self._find_dom_id(dom_id)
+        if obj:
+            obj.setProperty("placeholderTextColor", color)
+    
     @pyqtSlot()
     def onButtonManga(self):
         print(f"onButtonManga clicked")
         parameters.set_is_webtoon(False)
+        
+        # Switch display
+        self._set_color('webtoon_rectangle', 'grey')
+        self._set_color('manga_rectangle', 'green')
+        
+        
     
     
     @pyqtSlot()
     def onButtonWebtoon(self):
         print(f"onButtonWebtoon clicked")
         parameters.set_is_webtoon(True)
+        
+        # Switch display
+        self._set_color('webtoon_rectangle', 'green')
+        self._set_color('manga_rectangle', 'grey')
     
     
     @pyqtSlot()
@@ -98,6 +130,11 @@ class Backend(QObject):
         print(f"onButtonNoSplit clicked")
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(False)
+        
+        self._set_color('no_split_rectangle','green')
+        self._set_color('split_right_left_rectangle','grey')
+        self._set_color('split_left_right_rectangle','grey')
+        
     
     
     @pyqtSlot()
@@ -105,6 +142,10 @@ class Backend(QObject):
         print(f"onButtonSplitRightThenLeft clicked")
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(True)
+        
+        self._set_color('no_split_rectangle', 'grey')
+        self._set_color('split_right_left_rectangle', 'green')
+        self._set_color('split_left_right_rectangle', 'grey')
     
     
     @pyqtSlot()
@@ -112,6 +153,10 @@ class Backend(QObject):
         print(f"onButtonSplitLeftThenRight clicked")
         parameters.set_split_left_then_right(True)
         parameters.set_split_right_then_left(False)
+        
+        self._set_color('no_split_rectangle', 'grey')
+        self._set_color('split_right_left_rectangle', 'grey')
+        self._set_color('split_left_right_rectangle', 'green')
     
     
     @pyqtSlot()
@@ -156,3 +201,9 @@ class Backend(QObject):
         directory = QFileDialog.getExistingDirectory(None, "Select Directory", "", options=QFileDialog.Option.ShowDirsOnly)
         if directory:
             print(f"Selected directory: {directory}")
+            output_directory_input = self._find_dom_id('output_directory_input')
+            if output_directory_input:
+                output_directory_input.setProperty("text", directory)
+            self._set_placeholder_color('output_directory_input', 'green')
+        else:
+            self._set_placeholder_color('output_directory_input', 'red')
