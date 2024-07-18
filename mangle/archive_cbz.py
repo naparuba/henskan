@@ -27,8 +27,9 @@ class ArchiveCBZ(object):
         # type: (str) -> None
         output_directory = os.path.dirname(path)
         output_file_name = '%s.cbz' % os.path.basename(path)
-        output_path = os.path.join(output_directory, output_file_name)
-        self._zipfile = ZipFile(output_path, 'w', ZIP_STORED)
+        self._output_path = os.path.join(output_directory, output_file_name)
+        self._zipfile = ZipFile(self._output_path, 'w', ZIP_STORED)
+        print(f"[CBZ] file: {self._output_path} open for writing")
     
     
     def add(self, filename):
@@ -40,4 +41,4 @@ class ArchiveCBZ(object):
     def close(self):
         t0 = time.time()
         self._zipfile.close()
-        print(f"CBZ generation time: {time.time() - t0:.3f}s")
+        print(f"[CBZ] file: {self._output_path} generation time: {time.time() - t0:.3f}s")

@@ -1,18 +1,14 @@
 import os
-import sys
 from typing import LiteralString
 
-from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QAbstractListModel, pyqtProperty, QModelIndex, QStringListModel, QThread
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtWidgets import QApplication, QFileDialog
-from PyQt6.QtQml import QQmlApplicationEngine
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
+from PyQt6.QtWidgets import QFileDialog
 
 from mangle.parameters import parameters
 from mangle.worker import Worker
 
 
-class Backend(QObject):
+class UIController(QObject):
     def __init__(self, engine, file_path_model):
         super().__init__()
         self.engine = engine
@@ -41,6 +37,7 @@ class Backend(QObject):
             return self._find_child(root_objects[0], dom_id)
         return None
     
+    
     @pyqtSlot(str)
     def onTitleChanged(self, text):
         print(f"Title changed: {text}")
@@ -48,7 +45,6 @@ class Backend(QObject):
         
         color = 'red' if not text else 'green'
         self._set_placeholder_color('title_input', color)
-
     
     
     @staticmethod
@@ -78,9 +74,8 @@ class Backend(QObject):
                 self.add_file_path(file_path, 0.33)
             elif os.path.isdir(file_path):
                 self._add_directory(file_path)
-                
+        
         print(f"onFilesDropped::Finished adding files")
-
     
     
     def _add_directory(self, directory):
@@ -97,11 +92,13 @@ class Backend(QObject):
         if obj:
             obj.setProperty("color", color)
     
+    
     def _set_placeholder_color(self, dom_id, color):
         # type: (str, str) -> None
         obj = self._find_dom_id(dom_id)
         if obj:
             obj.setProperty("placeholderTextColor", color)
+    
     
     @pyqtSlot()
     def onButtonManga(self):
@@ -111,8 +108,6 @@ class Backend(QObject):
         # Switch display
         self._set_color('webtoon_rectangle', 'grey')
         self._set_color('manga_rectangle', 'green')
-        
-        
     
     
     @pyqtSlot()
@@ -131,10 +126,9 @@ class Backend(QObject):
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(False)
         
-        self._set_color('no_split_rectangle','green')
-        self._set_color('split_right_left_rectangle','grey')
-        self._set_color('split_left_right_rectangle','grey')
-        
+        self._set_color('no_split_rectangle', 'green')
+        self._set_color('split_right_left_rectangle', 'grey')
+        self._set_color('split_left_right_rectangle', 'grey')
     
     
     @pyqtSlot()
@@ -201,6 +195,7 @@ class Backend(QObject):
         directory = QFileDialog.getExistingDirectory(None, "Select Directory", "", options=QFileDialog.Option.ShowDirsOnly)
         if directory:
             print(f"Selected directory: {directory}")
+            parameters.set_output_directory(directory)
             output_directory_input = self._find_dom_id('output_directory_input')
             if output_directory_input:
                 output_directory_input.setProperty("text", directory)

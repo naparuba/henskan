@@ -110,9 +110,8 @@ class Worker(QObject):
     def run(self):
         self._index_value = 0
         self._split_page_offset = 0
-        parameters.set_title('test')
         
-        directory = r'C:\Users\napar\Desktop\export'
+        directory = parameters.get_output_directory()
         self._split_page_offset = 0
         self._book_path = os.path.join(directory, parameters.get_title())
         self._archive = None

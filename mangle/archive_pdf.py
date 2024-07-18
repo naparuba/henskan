@@ -30,15 +30,17 @@ class ArchivePDF(object):
         # type: (str, str, str) -> None
         output_directory = os.path.dirname(path)
         output_file_name = '%s.pdf' % os.path.basename(path)
-        output_path = os.path.join(output_directory, output_file_name)
+        self._output_path = os.path.join(output_directory, output_file_name)
         # self._current_device = device
         # self.bookTitle = title
         self._page_size = EReaderData.Profiles[device][0]
         # pagesize could be letter or A4 for standardization, but we need to control some image sizes
-        self._canvas = canvas.Canvas(output_path, pagesize=self._page_size)
+        self._canvas = canvas.Canvas(self._output_path, pagesize=self._page_size)
         self._canvas.setAuthor("Poutoux")
         self._canvas.setTitle(title)
         self._canvas.setSubject("Created for " + device)
+        
+        print(f'[PDF] file: {self._output_path} open for writing')
     
     
     def add(self, filename):
@@ -50,4 +52,4 @@ class ArchivePDF(object):
     def close(self):
         t0 = time.time()
         self._canvas.save()
-        print(f"PDF generation time: {time.time() - t0:.3f}s")
+        print(f"[PDF] file: {self._output_path} generation time: {time.time() - t0:.3f}s")

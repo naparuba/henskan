@@ -4,7 +4,7 @@ from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QStringListModel, 
 from PyQt6.QtWidgets import QApplication, QFileDialog
 from PyQt6.QtQml import QQmlApplicationEngine
 
-from mangle.ui_controler import Backend
+from mangle.ui_controler import UIController
 from mangle.file_path_model import FilePathModel
 
 if __name__ == "__main__":
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     file_path_model = FilePathModel()
     
     # Create the backend object
-    backend = Backend(engine, file_path_model)
+    backend = UIController(engine, file_path_model)
     print(f"backend: {backend}")
     
     # Expose the backend object to QML
