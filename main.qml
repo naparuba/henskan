@@ -7,7 +7,7 @@ import QtQuick.Dialogs
 
 ApplicationWindow {
     visible: true
-    width: 800
+    width: 840
     height: 600
     title: "Mangle"
 
@@ -100,7 +100,7 @@ ApplicationWindow {
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
-                            source: "manga.png"
+                            source: "mangle/img/manga.png"
                         }
                         onClicked: {
                             backend.onButtonManga()
@@ -115,7 +115,7 @@ ApplicationWindow {
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
-                            source: "webtoon.png"
+                            source: "mangle/img/webtoon.png"
                         }
                         onClicked: {
                             backend.onButtonWebtoon()
@@ -124,16 +124,24 @@ ApplicationWindow {
                 }
             }
 
+            // separator
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: "purple"
+            }
+
+            // Split line
             RowLayout {
                 Rectangle {  // No split
                     width: 64
-                    height: 64
+                    height: 96
                     color: "blue"
                     Button {
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
-                            source: "manga.png"
+                            source: "mangle/img/no-split.png"
                         }
                         onClicked: {
                             backend.onButtonNoSplit()
@@ -142,13 +150,13 @@ ApplicationWindow {
                 }
                 Rectangle {  // Split left then right
                     width: 64
-                    height: 64
+                    height: 96
                     color: "purple"
                     Button {
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
-                            source: "manga.png"
+                            source: "mangle/img/split-left-right.png"
                         }
                         onClicked: {
                             backend.onButtonSplitRightThenLeft()
@@ -157,13 +165,13 @@ ApplicationWindow {
                 }
                 Rectangle {// Split right then left
                     width: 64
-                    height: 64
+                    height: 96
                     color: "grey"
                     Button {
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
-                            source: "manga.png"
+                            source: "mangle/img/split-right-left.png"
                         }
                         onClicked: {
                             backend.onButtonSplitLeftThenRight()
@@ -172,28 +180,52 @@ ApplicationWindow {
                 }
             }
 
+            // separator
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: "purple"
+            }
+
             // DEVICE
-            ComboBox {
-                width: 200
-                model: ["Kindle 1", "Kindle 2/3/Touch", "Kindle 4 & 5", "Kindle DX/DXG", "Kindle Paperwhite 1 & 2", "Kindle Paperwhite 3/Voyage/Oasis", "Kobo Mini/Touch", "Kobo Glo", "Kobo Glo HD", "Kobo Aura", "Kobo Aura HD", "Kobo Aura H2O", "Kobo Libra H2O", "Kobo Elipsa 2E"]
-                currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
-                onCurrentIndexChanged: {
-                    console.log("Current index changed to", currentIndex, "model[currentIndex] =", model[currentIndex])
-                    backend.onDeviceChanged(model[currentIndex])
+            RowLayout {
+                ComboBox {
+                    Layout.fillWidth: true
+                    model: ["Kindle 1", "Kindle 2/3/Touch", "Kindle 4 & 5", "Kindle DX/DXG", "Kindle Paperwhite 1 & 2", "Kindle Paperwhite 3/Voyage/Oasis", "Kobo Mini/Touch", "Kobo Glo", "Kobo Glo HD", "Kobo Aura", "Kobo Aura HD", "Kobo Aura H2O", "Kobo Libra H2O", "Kobo Elipsa 2E"]
+                    currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
+                    onCurrentIndexChanged: {
+                        console.log("Current index changed to", currentIndex, "model[currentIndex] =", model[currentIndex])
+                        backend.onDeviceChanged(model[currentIndex])
+                    }
                 }
+            }
+
+            // separator
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: "purple"
             }
 
             // TITLE
-            TextField {
-                id: titleInput
-                width: parent.width
-                //focus: true   // focus at start?
-                placeholderText: "Enter title..."
-                onTextChanged: {
-                    backend.onTitleChanged(titleInput.text)
+            RowLayout {
+                TextField {
+                    id: titleInput
+                    Layout.fillWidth: true
+                    //focus: true   // focus at start?
+                    placeholderText: "Enter title..."
+                    onTextChanged: {
+                        backend.onTitleChanged(titleInput.text)
+                    }
                 }
             }
 
+            // separator
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: "purple"
+            }
 
             // Output
             RowLayout {
@@ -226,7 +258,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     Image {
                         anchors.fill: parent
-                        source: "manga.png"
+                        source: "mangle/img/manga.png"
                     }
                     onClicked: {
                         backend.onConvertClicked()
