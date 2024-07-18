@@ -30,6 +30,9 @@ if __name__ == "__main__":
     engine.load(QUrl.fromLocalFile('main.qml'))
     print(f"engine loaded")
     
+    # Get the controller know about parameters controllers, and disabled them all
+    ui_controller.load_components()
+    
     if not engine.rootObjects():
         print("Error: No root objects")
         sys.exit(-1)

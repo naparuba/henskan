@@ -4,8 +4,25 @@ from typing import LiteralString
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
 from PyQt6.QtWidgets import QFileDialog
 
-from mangle.parameters import parameters
-from mangle.worker import Worker
+from .parameters import parameters
+from .ui_component import UIInput, UIRectButton, UIComboBox, UIButton, UIProgressBar
+from .worker import Worker
+
+COMPONENTS = {
+    'title_input':                UIInput,
+    'webtoon_rectangle':          UIRectButton,
+    'manga_rectangle':            UIRectButton,
+    'no_split_rectangle':         UIRectButton,
+    'split_left_right_rectangle': UIRectButton,
+    'split_right_left_rectangle': UIRectButton,
+    'device_combo_box':           UIComboBox,
+    
+    'output_directory_button':    UIButton,
+    'output_directory_input':     UIInput,
+    
+    'convert_rect_button':        UIRectButton,
+    'progress_bar':               UIProgressBar,
+}
 
 
 class UIController(QObject):
@@ -13,11 +30,31 @@ class UIController(QObject):
         super().__init__()
         self.engine = engine
         self._file_path_model = file_path_model
+        
+        self._components = {}
+        
+        self._col_parameters = None
+        self._col_convert = None
+    
+    
+    def load_components(self):
+        for component_id, ui_component_klass in COMPONENTS.items():
+            dom_element = self._find_dom_id(component_id)
+            if not dom_element:
+                raise ValueError(f"Component {dom_element=} not found")
+            component = ui_component_klass(component_id, dom_element)
+            component.disable()
+            self._components[component_id] = component
+        
+        # hide col2 & 3
+        self._col_parameters = self._find_dom_id('col_parameters')
+        self._col_parameters.setProperty("visible", False)
+        self._col_convert = self._find_dom_id('col_convert')
+        self._col_convert.setProperty("visible", False)
     
     
     @pyqtSlot()
     def add_file_path(self, file_path, size):
-        
         self._file_path_model.add_file_path(file_path, size)
     
     
@@ -75,7 +112,15 @@ class UIController(QObject):
             elif os.path.isdir(file_path):
                 self._add_directory(file_path)
         
-        print(f"onFilesDropped::Finished adding files")
+        if len(parameters.get_images()):
+            self._enable_other_cols()
+        
+    def _enable_other_cols(self):
+        self._col_parameters.setProperty("visible", True)
+        self._col_convert.setProperty("visible", True)
+        
+        for component in self._components.values():
+            component.enable()
     
     
     def _add_directory(self, directory):

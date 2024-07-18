@@ -5,7 +5,6 @@ import QtQuick.Layouts 1.15
 import QtQuick.Dialogs
 
 
-
 ApplicationWindow {
     visible: true
     width: 840
@@ -44,8 +43,9 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 10
         ColumnLayout {
-            //anchors.fill: parent
-            //anchors.margins: 10
+            id: col_file_list
+            objectName: "col_file_list"
+
 
             ListView {
                 id: file_list
@@ -89,6 +89,9 @@ ApplicationWindow {
 
         // Middle columns with parameters
         ColumnLayout {
+            id: col_parameters
+            objectName: "col_parameters"
+
             spacing: 10
 
             RowLayout {
@@ -201,6 +204,8 @@ ApplicationWindow {
             // DEVICE
             RowLayout {
                 ComboBox {
+                    id: device_combo_box
+                    objectName: "device_combo_box"
                     Layout.fillWidth: true
                     model: ["Kindle 1", "Kindle 2/3/Touch", "Kindle 4 & 5", "Kindle DX/DXG", "Kindle Paperwhite 1 & 2", "Kindle Paperwhite 3/Voyage/Oasis", "Kobo Mini/Touch", "Kobo Glo", "Kobo Glo HD", "Kobo Aura", "Kobo Aura HD", "Kobo Aura H2O", "Kobo Libra H2O", "Kobo Elipsa 2E"]
                     currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
@@ -226,7 +231,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     placeholderText: "Enter title..."
                     color: "white"
-                    placeholderTextColor : "red"  // by default not set, will be green when set
+                    placeholderTextColor: "red"  // by default not set, will be green when set
                     onTextChanged: {
                         ui_controller.onTitleChanged(title_input.text)
                     }
@@ -242,7 +247,10 @@ ApplicationWindow {
 
             // Output
             RowLayout {
+
                 Button {
+                    id: output_directory_button
+                    objectName: "output_directory_button"
                     text: "⇓"
                     onClicked: {
                         ui_controller.selectOutputDirectory()
@@ -255,21 +263,29 @@ ApplicationWindow {
                     //width: parent.width
                     Layout.fillWidth: true
                     readOnly: true
-                    color : "white"
+                    color: "white"
                     placeholderText: "Selected Directory"
-                    placeholderTextColor : "red"  // by default not set, will be green when set
+                    placeholderTextColor: "red"  // by default not set, will be green when set
                 }
+
             }
+
 
         }
 
         // Last column with submit button and progress bar
+
         ColumnLayout {
+            id: col_convert
+            objectName: "col_convert"
+
 
             Rectangle { // Convert button
+                id: convert_rect_button
+                objectName: "convert_rect_button"
                 width: 128
                 height: 128
-                //color: "green"
+
                 Button {
                     anchors.fill: parent
                     Image {
@@ -292,5 +308,6 @@ ApplicationWindow {
                 value: 0  // Set initial value
             }
         }
+
     }
 }
