@@ -36,7 +36,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        backend.worker.updateProgress.connect(updateProgressBar)
+        ui_controller.worker.updateProgress.connect(updateProgressBar)
     }
 
 
@@ -77,7 +77,7 @@ ApplicationWindow {
                     DropArea {
                         anchors.fill: parent
                         onDropped: {
-                            backend.onFilesDropped(drop.text)
+                            ui_controller.onFilesDropped(drop.text)
                         }
                     }
                 }
@@ -106,7 +106,7 @@ ApplicationWindow {
                             source: "mangle/img/manga.png"
                         }
                         onClicked: {
-                            backend.onButtonManga()
+                            ui_controller.onButtonManga()
                         }
                     }
                 }
@@ -123,7 +123,7 @@ ApplicationWindow {
                             source: "mangle/img/webtoon.png"
                         }
                         onClicked: {
-                            backend.onButtonWebtoon()
+                            ui_controller.onButtonWebtoon()
                         }
                     }
                 }
@@ -151,7 +151,7 @@ ApplicationWindow {
                             source: "mangle/img/no-split.png"
                         }
                         onClicked: {
-                            backend.onButtonNoSplit()
+                            ui_controller.onButtonNoSplit()
                         }
                     }
                 }
@@ -168,7 +168,7 @@ ApplicationWindow {
                             source: "mangle/img/split-left-right.png"
                         }
                         onClicked: {
-                            backend.onButtonSplitLeftThenRight()
+                            ui_controller.onButtonSplitLeftThenRight()
                         }
                     }
                 }
@@ -185,7 +185,7 @@ ApplicationWindow {
                             source: "mangle/img/split-right-left.png"
                         }
                         onClicked: {
-                            backend.onButtonSplitRightThenLeft()
+                            ui_controller.onButtonSplitRightThenLeft()
                         }
                     }
                 }
@@ -206,7 +206,7 @@ ApplicationWindow {
                     currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
                     onCurrentIndexChanged: {
                         console.log("Current index changed to", currentIndex, "model[currentIndex] =", model[currentIndex])
-                        backend.onDeviceChanged(model[currentIndex])
+                        ui_controller.onDeviceChanged(model[currentIndex])
                     }
                 }
             }
@@ -228,7 +228,7 @@ ApplicationWindow {
                     color: "white"
                     placeholderTextColor : "red"  // by default not set, will be green when set
                     onTextChanged: {
-                        backend.onTitleChanged(title_input.text)
+                        ui_controller.onTitleChanged(title_input.text)
                     }
                 }
             }
@@ -245,7 +245,7 @@ ApplicationWindow {
                 Button {
                     text: "⇓"
                     onClicked: {
-                        backend.selectOutputDirectory()
+                        ui_controller.selectOutputDirectory()
                     }
                 }
 
@@ -277,7 +277,7 @@ ApplicationWindow {
                         source: "mangle/img/shock_off.png"
                     }
                     onClicked: {
-                        backend.onConvertClicked()
+                        ui_controller.onConvertClicked()
                     }
                 }
             }

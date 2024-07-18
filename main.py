@@ -18,11 +18,11 @@ if __name__ == "__main__":
     file_path_model = FilePathModel()
     
     # Create the backend object
-    backend = UIController(engine, file_path_model)
-    print(f"backend: {backend}")
+    ui_controller = UIController(engine, file_path_model)
+    print(f"UI Controller: {ui_controller}")
     
     # Expose the backend object to QML
-    engine.rootContext().setContextProperty("backend", backend)
+    engine.rootContext().setContextProperty("ui_controller", ui_controller)
     engine.rootContext().setContextProperty("file_path_model", file_path_model)
     print(f"Backend is set")
     
