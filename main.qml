@@ -8,6 +8,7 @@ import QtQuick.Dialogs
 ApplicationWindow {
     visible: true
 
+    // Fixed size
     maximumHeight: 600
     maximumWidth: 1024
 
@@ -55,7 +56,6 @@ ApplicationWindow {
                 objectName: "file_list"
                 Layout.fillWidth: true
                 height: 500
-                //width: 350
 
                 model: file_path_model
 
@@ -68,7 +68,7 @@ ApplicationWindow {
                 Rectangle {
                     anchors.fill: parent
                     color: file_list.count === 0 ? "grey" : "transparent"
-                    border.color: "black"
+                    border.color: file_list.count === 0 ? "black" : "green"
                     border.width: 1
                     Text {
                         id: drag_and_drop_text
@@ -157,7 +157,9 @@ ApplicationWindow {
                     width: 64
                     height: 64
                     color: "green"  // enable by default
-                    Button {
+
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             id: manga_button_image
@@ -175,7 +177,9 @@ ApplicationWindow {
                     width: 64
                     height: 64
                     color: "grey"
-                    Button {
+
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
@@ -205,7 +209,8 @@ ApplicationWindow {
                     width: 64
                     height: 96
                     color: "green"
-                    Button {
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
@@ -222,7 +227,8 @@ ApplicationWindow {
                     width: 64
                     height: 96
                     color: "grey"
-                    Button {
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
@@ -239,7 +245,8 @@ ApplicationWindow {
                     width: 64
                     height: 96
                     color: "grey"
-                    Button {
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
@@ -261,7 +268,8 @@ ApplicationWindow {
                     width: 64
                     height: 96
                     color: "green"
-                    Button {
+                    RoundButton {
+                        radius: 0
                         anchors.fill: parent
                         Image {
                             anchors.fill: parent
@@ -363,7 +371,8 @@ ApplicationWindow {
                 width: 128
                 height: 128
 
-                Button {
+                RoundButton {
+                    radius: 0
                     anchors.fill: parent
                     Image {
                         id: col_convert_img
