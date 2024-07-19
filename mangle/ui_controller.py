@@ -138,6 +138,11 @@ class UIController(QObject):
         
         # In all case, look if we have all parameters and can convert
         self._check_for_convert_ready()
+        
+    def _send_message_to_manga_webtoon_row(self, message):
+        # type: (str) -> None
+        manga_webtoon_row = self._find_dom_id('manga_or_webtoon_text')
+        manga_webtoon_row.setProperty("text", message)
     
     
     # We are looking for the most less level directory that is common to ALL image paths
@@ -206,10 +211,12 @@ class UIController(QObject):
         if nb_webtoon > quorum_size:
             parameters.set_is_webtoon(True)
             self._enable_webtoon_display()
+            self._send_message_to_manga_webtoon_row('Webtoon was detected')
             return
         
         # Not a webtoon so a manga
         self._enable_manga_display()
+        self._send_message_to_manga_webtoon_row('Manga was detected')
         
         # If more than half of the images can be split, then we set one split
         if nb_should_split > quorum_size:

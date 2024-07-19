@@ -50,7 +50,6 @@ ApplicationWindow {
             objectName: "col_file_list"
             Layout.minimumWidth: 300
 
-
             ListView {
                 id: file_list
                 objectName: "file_list"
@@ -125,7 +124,6 @@ ApplicationWindow {
                             sequentialAnimation.start();
                         }
 
-
                     }
                     Drag.active: true
                     Drag.hotSpot.x: width / 2
@@ -151,45 +149,83 @@ ApplicationWindow {
             spacing: 10
 
             RowLayout {
-                Rectangle {  // Is a Manga
-                    id: manga_rectangle
-                    objectName: "manga_rectangle"
-                    width: 64
-                    height: 64
-                    color: "green"  // enable by default
+                ColumnLayout {
+                    RowLayout {
 
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
-                            id: manga_button_image
-                            anchors.fill: parent
-                            source: "mangle/img/manga.png"
+                        Rectangle {  // Is a Manga
+                            id: manga_rectangle
+                            objectName: "manga_rectangle"
+                            width: 64
+                            height: 64
+                            color: "green"  // enable by default
+
+                            RoundButton {
+                                radius: 0
+                                anchors.fill: parent
+                                Image {
+                                    id: manga_button_image
+                                    anchors.fill: parent
+                                    source: "mangle/img/manga.png"
+                                }
+                                onClicked: {
+                                    ui_controller.on_button_manga()
+                                }
+                            }
                         }
-                        onClicked: {
-                            ui_controller.on_button_manga()
+                        Rectangle {  // Is a Webtoon
+                            id: webtoon_rectangle
+                            objectName: "webtoon_rectangle"
+                            width: 64
+                            height: 64
+                            color: "grey"
+
+                            RoundButton {
+                                radius: 0
+                                anchors.fill: parent
+                                Image {
+                                    anchors.fill: parent
+                                    source: "mangle/img/webtoon.png"
+                                }
+                                onClicked: {
+                                    ui_controller.on_button_webtoon()
+                                }
+                            }
                         }
                     }
-                }
-                Rectangle {  // Is a Webtoon
-                    id: webtoon_rectangle
-                    objectName: "webtoon_rectangle"
-                    width: 64
-                    height: 64
-                    color: "grey"
 
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
-                            anchors.fill: parent
-                            source: "mangle/img/webtoon.png"
+                    // Fast message display to help the user know why we did choose one or the other
+                    Text {
+                        id: manga_or_webtoon_text
+                        objectName: "manga_or_webtoon_text"
+                        text: ""
+                        color: "green"
+                        font.pixelSize: 10
+
+                        OpacityAnimator {
+                            id: manga_or_webtoon_text_opacity_animation
+                            target: manga_or_webtoon_text
+                            from: 1.0
+                            to: 0.0
+                            duration: 10000 // 10 seconds
+                            easing.type: Easing.InQuart
+                            onRunningChanged: {
+                                //if (!running) {
+                                // Once the scale up animation completes, start the scale down animation
+                                //scaleAnimator.start();
+                                //}
+                            }
                         }
-                        onClicked: {
-                            ui_controller.on_button_webtoon()
+
+                        // Reset opacity when text changes to make it visible again
+                        onTextChanged: {
+                            opacity = 1
+                            manga_or_webtoon_text_opacity_animation.start()
                         }
+
+
                     }
                 }
+
             }
 
             // separator
