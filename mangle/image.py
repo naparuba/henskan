@@ -725,6 +725,20 @@ def _split_webtoon(image):
     return split_images
 
 
+def guess_manga_or_webtoon_image(source):
+    # type: (str) -> str
+    image = _load_image(source)
+    try:
+        width, height = image.size
+    except IOError:
+        raise RuntimeError('Cannot read image file %s' % source)
+    
+    # A webtoon is  far higher than a manga, so we can take a 4x ration as high means a webtoon
+    # and if not, is a manga
+    
+    return 'webtoon' if height > 4 * width else 'manga'
+
+
 def _load_image(source):
     # type: (str) -> Image
     try:

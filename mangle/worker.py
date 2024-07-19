@@ -3,7 +3,8 @@ import shutil
 import time
 import traceback
 
-from PyQt6.QtCore import QObject, pyqtSignal, QThread
+from PyQt6.QtCore import QObject, pyqtSignal, QThread, QUrl
+from PyQt6.QtGui import QDesktopServices
 
 from .archive import ARCHIVE_FORMATS
 from .archive_cbz import ArchiveCBZ
@@ -137,4 +138,6 @@ class Worker(QObject):
             print(f'Cleaning temporary directory {self._book_path}')
             shutil.rmtree(self._book_path)
         
+        # Show the output directory so the user can quickly access it
+        QDesktopServices.openUrl(QUrl.fromLocalFile(directory))
         print(f'Worker::run::Exiting')

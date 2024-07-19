@@ -5,7 +5,7 @@ from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
 from PyQt6.QtWidgets import QFileDialog
 
 from .parameters import parameters
-from .ui_component import UIInput, UIRectButton, UIComboBox, UIButton, UIProgressBar
+from .ui_component import UIInput, UIRectButton, UIComboBox, UIProgressBar, UIRectButtonConvert
 from .worker import Worker
 
 COMPONENTS = {
@@ -17,10 +17,9 @@ COMPONENTS = {
     'split_right_left_rectangle': UIRectButton,
     'device_combo_box':           UIComboBox,
     
-    'output_directory_button':    UIButton,
     'output_directory_input':     UIInput,
     
-    'convert_rect_button':        UIRectButton,
+    'convert_rect_button':        UIRectButtonConvert,
     'progress_bar':               UIProgressBar,
 }
 
@@ -35,6 +34,8 @@ class UIController(QObject):
         
         self._col_parameters = None
         self._col_convert = None
+        
+        self._first_drop_done = False
     
     
     def load_components(self):
@@ -76,12 +77,13 @@ class UIController(QObject):
     
     
     @pyqtSlot(str)
-    def onTitleChanged(self, text):
+    def on_title_changed(self, text):
         print(f"Title changed: {text}")
         parameters.set_title(text)
         
-        color = 'red' if not text else 'green'
-        self._set_placeholder_color('title_input', color)
+        self._components['title_input'].set_value(text)
+        
+        self._check_for_convert_ready()
     
     
     @staticmethod
@@ -90,7 +92,7 @@ class UIController(QObject):
         return os.path.splitext(filename)[1].lower()
     
     
-    def _is_image_file(self, filename):
+    def __is_image_file(self, filename):
         # type: (LiteralString | str | bytes) -> bool
         image_exts = ('.jpeg', '.jpg', '.gif', '.png')
         
@@ -98,7 +100,7 @@ class UIController(QObject):
     
     
     @pyqtSlot(str)
-    def onFilesDropped(self, file_url_str):
+    def on_files_dropped(self, file_url_str):
         print(f"File dropped: ZZ{file_url_str}ZZ  {type(file_url_str)}")
         
         file_paths = file_url_str.split("\n")
@@ -107,15 +109,31 @@ class UIController(QObject):
             print(f'onFilesDropped::File path: {file_path}')
             if not file_path:
                 continue
-            if self._is_image_file(file_path):
+            if self.__is_image_file(file_path):
                 self.add_file_path(file_path, 0.33)
             elif os.path.isdir(file_path):
-                self._add_directory(file_path)
+                self.__add_directory(file_path)
         
         if len(parameters.get_images()):
-            self._enable_other_cols()
+            self.__enable_other_cols()
         
-    def _enable_other_cols(self):
+        self._drop_done()
+    
+    
+    def _drop_done(self):
+        if not self._first_drop_done:
+            self._guess_parameters()
+            self._first_drop_done = True
+        
+        # In all case, look if we have all parameters and can convert
+        self._check_for_convert_ready()
+    
+    
+    def _guess_parameters(self):
+        print(f'UIController::_guess_parameters')
+    
+    
+    def __enable_other_cols(self):
         self._col_parameters.setProperty("visible", True)
         self._col_convert.setProperty("visible", True)
         
@@ -123,111 +141,97 @@ class UIController(QObject):
             component.enable()
     
     
-    def _add_directory(self, directory):
+    def __add_directory(self, directory):
         for root, _, subfiles in os.walk(directory):
             for filename in subfiles:
                 file_path = os.path.join(root, filename)
-                if self._is_image_file(file_path):
+                if self.__is_image_file(file_path):
                     self.add_file_path(file_path, 0.33)
     
     
-    def _set_color(self, dom_id, color):
-        # type: (str, str) -> None
-        obj = self._find_dom_id(dom_id)
-        if obj:
-            obj.setProperty("color", color)
-    
-    
-    def _set_placeholder_color(self, dom_id, color):
-        # type: (str, str) -> None
-        obj = self._find_dom_id(dom_id)
-        if obj:
-            obj.setProperty("placeholderTextColor", color)
-    
-    
     @pyqtSlot()
-    def onButtonManga(self):
+    def on_button_manga(self):
         print(f"onButtonManga clicked")
         parameters.set_is_webtoon(False)
-        
+        self._enable_manga_display()
+    
+    
+    def _enable_manga_display(self):
         # Switch display
-        self._set_color('webtoon_rectangle', 'grey')
-        self._set_color('manga_rectangle', 'green')
+        self._components['webtoon_rectangle'].set_not_active()
+        self._components['manga_rectangle'].set_active()
     
     
     @pyqtSlot()
-    def onButtonWebtoon(self):
+    def on_button_webtoon(self):
         print(f"onButtonWebtoon clicked")
         parameters.set_is_webtoon(True)
-        
+        self._enable_webtoon_display()
+    
+    
+    def _enable_webtoon_display(self):
         # Switch display
-        self._set_color('webtoon_rectangle', 'green')
-        self._set_color('manga_rectangle', 'grey')
+        self._components['webtoon_rectangle'].set_active()
+        self._components['manga_rectangle'].set_not_active()
     
     
     @pyqtSlot()
-    def onButtonNoSplit(self):
+    def on_button_no_split(self):
         print(f"onButtonNoSplit clicked")
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(False)
         
-        self._set_color('no_split_rectangle', 'green')
-        self._set_color('split_right_left_rectangle', 'grey')
-        self._set_color('split_left_right_rectangle', 'grey')
+        self._components['split_right_left_rectangle'].set_not_active()
+        self._components['split_left_right_rectangle'].set_not_active()
+        self._components['no_split_rectangle'].set_active()
     
     
     @pyqtSlot()
-    def onButtonSplitRightThenLeft(self):
+    def on_button_split_right_then_left(self):
         print(f"onButtonSplitRightThenLeft clicked")
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(True)
         
-        self._set_color('no_split_rectangle', 'grey')
-        self._set_color('split_right_left_rectangle', 'green')
-        self._set_color('split_left_right_rectangle', 'grey')
+        self._components['split_right_left_rectangle'].set_active()
+        self._components['split_left_right_rectangle'].set_not_active()
+        self._components['no_split_rectangle'].set_not_active()
     
     
     @pyqtSlot()
-    def onButtonSplitLeftThenRight(self):
+    def on_button_split_left_then_right(self):
         print(f"onButtonSplitLeftThenRight clicked")
         parameters.set_split_left_then_right(True)
         parameters.set_split_right_then_left(False)
         
-        self._set_color('no_split_rectangle', 'grey')
-        self._set_color('split_right_left_rectangle', 'grey')
-        self._set_color('split_left_right_rectangle', 'green')
+        self._components['split_right_left_rectangle'].set_not_active()
+        self._components['split_left_right_rectangle'].set_active()
+        self._components['no_split_rectangle'].set_not_active()
     
     
     @pyqtSlot()
-    def onConvertClicked(self):
+    def on_convert_clicked(self):
         print("Submit button clicked")
         
         self.thread = QThread()
         self.worker = Worker()
         self.worker.moveToThread(self.thread)
-        self.worker.updateProgress.connect(self.updateProgressBar)
+        self.worker.updateProgress.connect(self.update_progress_bar)
         self.thread.started.connect(self.worker.run)
         self.thread.start()
     
     
     @pyqtSlot(int)
-    def updateProgressBar(self, value):
+    def update_progress_bar(self, value):
         print(f'Backend::updateProgressBar:: Progress: {value}')
         # Find the ProgressBar QML object by its objectName
-        progressBar = self._find_child(self.engine.rootObjects()[0], "progress_bar")
-        if progressBar:
+        progress_bar = self._find_child(self.engine.rootObjects()[0], "progress_bar")
+        if progress_bar:
             # Update the value of the ProgressBar
-            progressBar.setProperty("value", value)
-        # root_objects = self.engine.rootObjects()
-        # if root_objects:
-        #     root_object = root_objects[0]
-        #     title_input = root_object.findChild(QObject, "titleInput")
-        #     if title_input:
-        #         title_input.setProperty("enabled", False)
+            progress_bar.setProperty("value", value)
     
     
     @pyqtSlot(str)
-    def onDeviceChanged(self, value):
+    def on_device_changed(self, value):
         print(f"Selected value: {value}")
         parameters.set_device(value)
     
@@ -236,14 +240,31 @@ class UIController(QObject):
     
     
     @pyqtSlot()
-    def selectOutputDirectory(self):
+    def select_output_directory(self):
         directory = QFileDialog.getExistingDirectory(None, "Select Directory", "", options=QFileDialog.Option.ShowDirsOnly)
         if directory:
             print(f"Selected directory: {directory}")
             parameters.set_output_directory(directory)
-            output_directory_input = self._find_dom_id('output_directory_input')
-            if output_directory_input:
-                output_directory_input.setProperty("text", directory)
-            self._set_placeholder_color('output_directory_input', 'green')
+        # Update the UI
+        self._components['output_directory_input'].set_value(directory)
+        
+        self._check_for_convert_ready()
+    
+    
+    def _check_for_convert_ready(self):
+        if parameters.is_ready_for_convert():
+            self._enable_convert()
         else:
-            self._set_placeholder_color('output_directory_input', 'red')
+            self._disable_convert()
+    
+    
+    def _enable_convert(self):
+        print('UIController::_enable_convert')
+        self._components['convert_rect_button'].enable()
+        self._components['progress_bar'].enable()
+    
+    
+    def _disable_convert(self):
+        print('UIController::_disable_convert')
+        self._components['convert_rect_button'].disable()
+        self._components['progress_bar'].disable()

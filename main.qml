@@ -7,8 +7,13 @@ import QtQuick.Dialogs
 
 ApplicationWindow {
     visible: true
-    width: 840
-    height: 600
+
+    maximumHeight: 600
+    maximumWidth: 1024
+
+    minimumHeight: 600
+    minimumWidth: 1024
+
     title: "Mangle"
 
     Material.theme: Material.Dark
@@ -21,21 +26,18 @@ ApplicationWindow {
             spacing: 10
             Text {
                 color: "white"
-                text: full_path
-            }
-            Text {
-                text: size + 'Mo'
+                text: full_path.length > 100 ? "..." + full_path.slice(-100) : full_path   // Limit size because dialog is not so big
             }
         }
     }
 
     // PROGRESS BAR
-    function updateProgressBar(value) {
+    function update_progress_bar(value) {
         progress_bar.value = value
     }
 
     Component.onCompleted: {
-        ui_controller.worker.updateProgress.connect(updateProgressBar)
+        ui_controller.worker.updateProgress.connect(update_progress_bar)
     }
 
 
@@ -45,13 +47,15 @@ ApplicationWindow {
         ColumnLayout {
             id: col_file_list
             objectName: "col_file_list"
+            Layout.minimumWidth: 500
 
 
             ListView {
                 id: file_list
                 objectName: "file_list"
+                Layout.fillWidth: true
                 height: 500
-                width: 350
+                //width: 350
 
                 model: file_path_model
 
@@ -63,12 +67,13 @@ ApplicationWindow {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: "transparent"
+                    color: file_list.count === 0 ? "grey" : "transparent"
                     border.color: "black"
                     border.width: 1
                     Text {
                         anchors.centerIn: parent
                         text: "Drop files here"
+                        color: "purple"
                         visible: file_list.count === 0
                     }
                     Drag.active: true
@@ -77,7 +82,7 @@ ApplicationWindow {
                     DropArea {
                         anchors.fill: parent
                         onDropped: {
-                            ui_controller.onFilesDropped(drop.text)
+                            ui_controller.on_files_dropped(drop.text)
                         }
                     }
                 }
@@ -109,7 +114,7 @@ ApplicationWindow {
                             source: "mangle/img/manga.png"
                         }
                         onClicked: {
-                            ui_controller.onButtonManga()
+                            ui_controller.on_button_manga()
                         }
                     }
                 }
@@ -126,7 +131,7 @@ ApplicationWindow {
                             source: "mangle/img/webtoon.png"
                         }
                         onClicked: {
-                            ui_controller.onButtonWebtoon()
+                            ui_controller.on_button_webtoon()
                         }
                     }
                 }
@@ -154,7 +159,7 @@ ApplicationWindow {
                             source: "mangle/img/no-split.png"
                         }
                         onClicked: {
-                            ui_controller.onButtonNoSplit()
+                            ui_controller.on_button_no_split()
                         }
                     }
                 }
@@ -171,7 +176,7 @@ ApplicationWindow {
                             source: "mangle/img/split-left-right.png"
                         }
                         onClicked: {
-                            ui_controller.onButtonSplitLeftThenRight()
+                            ui_controller.on_button_split_left_then_right()
                         }
                     }
                 }
@@ -188,7 +193,7 @@ ApplicationWindow {
                             source: "mangle/img/split-right-left.png"
                         }
                         onClicked: {
-                            ui_controller.onButtonSplitRightThenLeft()
+                            ui_controller.on_button_split_right_then_left()
                         }
                     }
                 }
@@ -211,9 +216,13 @@ ApplicationWindow {
                     currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
                     onCurrentIndexChanged: {
                         console.log("Current index changed to", currentIndex, "model[currentIndex] =", model[currentIndex])
-                        ui_controller.onDeviceChanged(model[currentIndex])
+                        ui_controller.on_device_changed(model[currentIndex])
                     }
+                    //popup.Material.foreground: "red"
+                    Material.accent: "green"  // border
+                    Material.foreground: "green"  // selected text
                 }
+
             }
 
             // separator
@@ -229,11 +238,11 @@ ApplicationWindow {
                     id: title_input
                     objectName: "title_input"
                     Layout.fillWidth: true
-                    placeholderText: "Enter title..."
+                    placeholderText: text ? "Title" : "Enter title..."
                     color: "white"
                     placeholderTextColor: "red"  // by default not set, will be green when set
                     onTextChanged: {
-                        ui_controller.onTitleChanged(title_input.text)
+                        ui_controller.on_title_changed(title_input.text)
                     }
                 }
             }
@@ -248,15 +257,6 @@ ApplicationWindow {
             // Output
             RowLayout {
 
-                Button {
-                    id: output_directory_button
-                    objectName: "output_directory_button"
-                    text: "⇓"
-                    onClicked: {
-                        ui_controller.selectOutputDirectory()
-                    }
-                }
-
                 TextField {
                     id: output_directory_input
                     objectName: "output_directory_input"
@@ -264,8 +264,13 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     readOnly: true
                     color: "white"
-                    placeholderText: "Selected Directory"
+                    placeholderText: text ? "Output Directory" : "Select Directory"
                     placeholderTextColor: "red"  // by default not set, will be green when set
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: ui_controller.select_output_directory()
+                    }
                 }
 
             }
@@ -289,11 +294,13 @@ ApplicationWindow {
                 Button {
                     anchors.fill: parent
                     Image {
+                        id: col_convert_img
+                        objectName: "col_convert_img"
                         anchors.fill: parent
                         source: "mangle/img/shock_off.png"
                     }
                     onClicked: {
-                        ui_controller.onConvertClicked()
+                        ui_controller.on_convert_clicked()
                     }
                 }
             }

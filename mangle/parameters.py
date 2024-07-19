@@ -49,6 +49,10 @@ class Parameters(object):
         self._output_directory = ''
     
     
+    def is_ready_for_convert(self):
+        return len(self._images) > 0 and self._output_directory != '' and self.is_title_set()
+    
+    
     def get_output_directory(self):
         return self._output_directory
     
