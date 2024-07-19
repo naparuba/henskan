@@ -1,10 +1,11 @@
 import sys
 
+
 from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QStringListModel, QAbstractListModel, QModelIndex, Qt, QVariant
 from PyQt6.QtWidgets import QApplication, QFileDialog
 from PyQt6.QtQml import QQmlApplicationEngine
 
-from mangle.ui_controler import UIController
+from mangle.ui_controller import UIController
 from mangle.file_path_model import FilePathModel
 
 if __name__ == "__main__":
