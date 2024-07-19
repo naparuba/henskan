@@ -239,60 +239,95 @@ ApplicationWindow {
             RowLayout {
                 id: split_manga_row
                 objectName: "split_manga_row"
-                Rectangle {  // No split
-                    id: no_split_rectangle
-                    objectName: "no_split_rectangle"
-                    width: 64
-                    height: 96
-                    color: "green"
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
-                            anchors.fill: parent
-                            source: "mangle/img/no-split.png"
+
+                ColumnLayout {
+                    RowLayout {
+                        Rectangle {  // No split
+                            id: no_split_rectangle
+                            objectName: "no_split_rectangle"
+                            width: 64
+                            height: 96
+                            color: "green"
+                            RoundButton {
+                                radius: 0
+                                anchors.fill: parent
+                                Image {
+                                    anchors.fill: parent
+                                    source: "mangle/img/no-split.png"
+                                }
+                                onClicked: {
+                                    ui_controller.on_button_no_split()
+                                }
+                            }
                         }
-                        onClicked: {
-                            ui_controller.on_button_no_split()
+                        Rectangle {  // Split left then right
+                            id: split_left_right_rectangle
+                            objectName: "split_left_right_rectangle"
+                            width: 64
+                            height: 96
+                            color: "grey"
+                            RoundButton {
+                                radius: 0
+                                anchors.fill: parent
+                                Image {
+                                    anchors.fill: parent
+                                    source: "mangle/img/split-left-right.png"
+                                }
+                                onClicked: {
+                                    ui_controller.on_button_split_left_then_right()
+                                }
+                            }
+                        }
+                        Rectangle {// Split right then left
+                            objectName: "split_right_left_rectangle"
+                            id: split_right_left_rectangle
+                            width: 64
+                            height: 96
+                            color: "grey"
+                            RoundButton {
+                                radius: 0
+                                anchors.fill: parent
+                                Image {
+                                    anchors.fill: parent
+                                    source: "mangle/img/split-right-left.png"
+                                }
+                                onClicked: {
+                                    ui_controller.on_button_split_right_then_left()
+                                }
+                            }
                         }
                     }
-                }
-                Rectangle {  // Split left then right
-                    id: split_left_right_rectangle
-                    objectName: "split_left_right_rectangle"
-                    width: 64
-                    height: 96
-                    color: "grey"
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
-                            anchors.fill: parent
-                            source: "mangle/img/split-left-right.png"
+
+
+                    // Fast message display to help the user know why we did choose one or the other
+                    Text {
+                        id: split_manga_row_text
+                        objectName: "split_manga_row_text"
+                        text: ""
+                        color: "green"
+                        font.pixelSize: 10
+
+                        OpacityAnimator {
+                            id: split_manga_row_text_opacity_animation
+                            target: split_manga_row_text
+                            from: 1.0
+                            to: 0.0
+                            duration: 10000 // 10 seconds
+                            easing.type: Easing.InQuart
+                            onRunningChanged: {}
                         }
-                        onClicked: {
-                            ui_controller.on_button_split_left_then_right()
+
+                        // Reset opacity when text changes to make it visible again
+                        onTextChanged: {
+                            opacity = 1
+                            split_manga_row_text_opacity_animation.start()
                         }
+
                     }
+
                 }
-                Rectangle {// Split right then left
-                    objectName: "split_right_left_rectangle"
-                    id: split_right_left_rectangle
-                    width: 64
-                    height: 96
-                    color: "grey"
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
-                            anchors.fill: parent
-                            source: "mangle/img/split-right-left.png"
-                        }
-                        onClicked: {
-                            ui_controller.on_button_split_right_then_left()
-                        }
-                    }
-                }
+
+
             }
 
             // WEBTOON Split line

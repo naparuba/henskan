@@ -138,11 +138,18 @@ class UIController(QObject):
         
         # In all case, look if we have all parameters and can convert
         self._check_for_convert_ready()
-        
+    
+    
     def _send_message_to_manga_webtoon_row(self, message):
         # type: (str) -> None
-        manga_webtoon_row = self._find_dom_id('manga_or_webtoon_text')
-        manga_webtoon_row.setProperty("text", message)
+        manga_or_webtoon_text = self._find_dom_id('manga_or_webtoon_text')
+        manga_or_webtoon_text.setProperty("text", message)
+    
+    
+    def _send_message_to_manga_split_row(self, message):
+        # type: (str) -> None
+        split_row_text = self._find_dom_id('split_manga_row_text')
+        split_row_text.setProperty("text", message)
     
     
     # We are looking for the most less level directory that is common to ALL image paths
@@ -212,6 +219,7 @@ class UIController(QObject):
             parameters.set_is_webtoon(True)
             self._enable_webtoon_display()
             self._send_message_to_manga_webtoon_row('Webtoon was detected')
+            self._send_message_to_manga_split_row('Automatic split for Webtoon')
             return
         
         # Not a webtoon so a manga
@@ -221,8 +229,10 @@ class UIController(QObject):
         # If more than half of the images can be split, then we set one split
         if nb_should_split > quorum_size:
             self._enable_split_left_then_right()
+            self._send_message_to_manga_split_row('Double pages detected: choose between split LEFT then RIGHT or RIGHT then LEFT')
         else:
             self._enable_no_split()
+            self._send_message_to_manga_split_row('Simple pages detected, no split need')
     
     
     def __enable_other_cols(self):
