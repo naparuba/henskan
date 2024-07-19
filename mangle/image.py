@@ -755,8 +755,7 @@ def save_image(image, target):
         raise RuntimeError('Cannot write image file %s' % target)
 
 
-# Look if the image is more width than height, if not, means
-# it's should not be split (like the front page of a manga,
+# Look if the image is more width than height, if not, means it's should not be split (like the front page of a manga,
 # when all the inner pages are double)
 def is_splitable(source):
     # type: (str) -> bool

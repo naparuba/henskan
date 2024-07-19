@@ -195,8 +195,10 @@ ApplicationWindow {
                 color: "purple"
             }
 
-            // Split line
+            // MANGA Split line
             RowLayout {
+                id: split_manga_row
+                objectName: "split_manga_row"
                 Rectangle {  // No split
                     id: no_split_rectangle
                     objectName: "no_split_rectangle"
@@ -245,6 +247,25 @@ ApplicationWindow {
                         }
                         onClicked: {
                             ui_controller.on_button_split_right_then_left()
+                        }
+                    }
+                }
+            }
+
+            // WEBTOON Split line
+            RowLayout {
+                id: split_webtoon_row
+                objectName: "split_webtoon_row"
+                visible: false  // hide by default, will be show if webtoon is detected or selected
+                Rectangle {  // No split
+                    width: 64
+                    height: 96
+                    color: "green"
+                    Button {
+                        anchors.fill: parent
+                        Image {
+                            anchors.fill: parent
+                            source: "mangle/img/split-webtoon.png"
                         }
                     }
                 }

@@ -1,9 +1,11 @@
 import os
+import random
 from typing import LiteralString
 
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
 from PyQt6.QtWidgets import QFileDialog
 
+from .image import guess_manga_or_webtoon_image, is_splitable
 from .parameters import parameters
 from .ui_component import UIInput, UIRectButton, UIComboBox, UIProgressBar, UIRectButtonConvert
 from .worker import Worker
@@ -131,6 +133,51 @@ class UIController(QObject):
     
     def _guess_parameters(self):
         print(f'UIController::_guess_parameters')
+        
+        nb_random_need = 20
+        
+        # Get 20 random images to guess: manga or webtoon, and can split or not
+        images = parameters.get_images()
+        if len(images) < nb_random_need:
+            return
+        
+        sampled_images = random.sample(images, min(nb_random_need, len(images)))
+        quorum_size = (len(sampled_images) // 2) + 1
+        
+        nb_webtoon = 0
+        nb_should_split = 0
+        
+        for image_path in sampled_images:
+            print(f'Guessing {image_path}')
+            image_guess = guess_manga_or_webtoon_image(image_path)
+            if image_guess == 'webtoon':
+                nb_webtoon += 1
+                print(f'''{image_path} is a webtoon''')
+                continue
+            print(f'''{image_path} is a manga''')
+            splitable = is_splitable(image_path)
+            if splitable:
+                nb_should_split += 1
+                print(f'''{image_path} can be split''')
+            else:
+                print(f'''{image_path} can't be split''')
+        
+        print(f'nb_webtoon: {nb_webtoon}  nb_should_split: {nb_should_split}')
+        
+        # If more than half of the images are webtoon, then we set webtoon
+        if nb_webtoon > quorum_size:
+            parameters.set_is_webtoon(True)
+            self._enable_webtoon_display()
+            return
+        
+        # Not a webtoon so a manga
+        self._enable_manga_display()
+        
+        # If more than half of the images can be split, then we set one split
+        if nb_should_split > quorum_size:
+            self._enable_split_left_then_right()
+        else:
+            self._enable_no_split()
     
     
     def __enable_other_cols(self):
@@ -160,6 +207,8 @@ class UIController(QObject):
         # Switch display
         self._components['webtoon_rectangle'].set_not_active()
         self._components['manga_rectangle'].set_active()
+        
+        self._enable_manga_split_display()
     
     
     @pyqtSlot()
@@ -173,11 +222,29 @@ class UIController(QObject):
         # Switch display
         self._components['webtoon_rectangle'].set_active()
         self._components['manga_rectangle'].set_not_active()
+        
+        self._enable_webtoon_split_display()
+    
+    
+    def _enable_manga_split_display(self):
+        print(f'UIController::_enable_manga_split_display')
+        self._find_dom_id('split_webtoon_row').setProperty("visible", False)
+        self._find_dom_id('split_manga_row').setProperty("visible", True)
+    
+    
+    def _enable_webtoon_split_display(self):
+        print(f'UIController::_enable_webtoon_split_display')
+        self._find_dom_id('split_webtoon_row').setProperty("visible", True)
+        self._find_dom_id('split_manga_row').setProperty("visible", False)
     
     
     @pyqtSlot()
     def on_button_no_split(self):
         print(f"onButtonNoSplit clicked")
+        self._enable_no_split()
+    
+    
+    def _enable_no_split(self):
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(False)
         
@@ -189,6 +256,10 @@ class UIController(QObject):
     @pyqtSlot()
     def on_button_split_right_then_left(self):
         print(f"onButtonSplitRightThenLeft clicked")
+        self._enable_split_right_then_left()
+    
+    
+    def _enable_split_right_then_left(self):
         parameters.set_split_left_then_right(False)
         parameters.set_split_right_then_left(True)
         
@@ -200,6 +271,10 @@ class UIController(QObject):
     @pyqtSlot()
     def on_button_split_left_then_right(self):
         print(f"onButtonSplitLeftThenRight clicked")
+        self._enable_split_left_then_right()
+    
+    
+    def _enable_split_left_then_right(self):
         parameters.set_split_left_then_right(True)
         parameters.set_split_right_then_left(False)
         
