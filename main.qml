@@ -50,6 +50,7 @@ ApplicationWindow {
             objectName: "col_file_list"
             Layout.minimumWidth: 300
 
+
             ListView {
                 id: file_list
                 objectName: "file_list"
@@ -145,6 +146,7 @@ ApplicationWindow {
         ColumnLayout {
             id: col_parameters
             objectName: "col_parameters"
+            Layout.minimumWidth: 220
 
             spacing: 10
 
