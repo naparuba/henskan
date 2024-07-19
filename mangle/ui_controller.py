@@ -152,6 +152,12 @@ class UIController(QObject):
         split_row_text.setProperty("text", message)
     
     
+    def _send_message_to_webtoon_split_row(self, message):
+        # type: (str) -> None
+        split_row_text = self._find_dom_id('split_webtoon_row_text')
+        split_row_text.setProperty("text", message)
+    
+    
     # We are looking for the most less level directory that is common to ALL image paths
     # and this will give us the title
     def _guess_title(self):
@@ -219,12 +225,12 @@ class UIController(QObject):
             parameters.set_is_webtoon(True)
             self._enable_webtoon_display()
             self._send_message_to_manga_webtoon_row('Webtoon was detected')
-            self._send_message_to_manga_split_row('Automatic split for Webtoon')
+            self._send_message_to_webtoon_split_row('Automatic split for Webtoon')
             return
         
         # Not a webtoon so a manga
         self._enable_manga_display()
-        self._send_message_to_manga_webtoon_row('Manga was detected')
+        self._send_message_to_manga_webtoon_row('Manga detected')
         
         # If more than half of the images can be split, then we set one split
         if nb_should_split > quorum_size:
@@ -258,9 +264,13 @@ class UIController(QObject):
     @pyqtSlot()
     def on_button_manga(self):
         print(f"onButtonManga clicked")
+        if not parameters.is_webtoon():
+            return
         parameters.set_is_webtoon(False)
         self._enable_manga_display()
-    
+        self._send_message_to_manga_webtoon_row('Switch to Manga')
+        self._send_message_to_manga_split_row('You must choose your split mode')
+
     
     def _enable_manga_display(self):
         # Switch display
@@ -273,8 +283,12 @@ class UIController(QObject):
     @pyqtSlot()
     def on_button_webtoon(self):
         print(f"onButtonWebtoon clicked")
+        if parameters.is_webtoon():
+            return  # already is
         parameters.set_is_webtoon(True)
         self._enable_webtoon_display()
+        self._send_message_to_manga_webtoon_row('Switch to Webtoon')
+        self._send_message_to_webtoon_split_row('Automatic split for Webtoon')
     
     
     def _enable_webtoon_display(self):
@@ -301,6 +315,7 @@ class UIController(QObject):
     def on_button_no_split(self):
         print(f"onButtonNoSplit clicked")
         self._enable_no_split()
+        self._send_message_to_manga_split_row('No image split')
     
     
     def _enable_no_split(self):
@@ -316,6 +331,7 @@ class UIController(QObject):
     def on_button_split_right_then_left(self):
         print(f"onButtonSplitRightThenLeft clicked")
         self._enable_split_right_then_left()
+        self._send_message_to_manga_split_row('Split page right, then left')
     
     
     def _enable_split_right_then_left(self):
@@ -331,6 +347,7 @@ class UIController(QObject):
     def on_button_split_left_then_right(self):
         print(f"onButtonSplitLeftThenRight clicked")
         self._enable_split_left_then_right()
+        self._send_message_to_manga_split_row('Split page left, then right')
     
     
     def _enable_split_left_then_right(self):

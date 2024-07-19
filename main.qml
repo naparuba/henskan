@@ -335,17 +335,46 @@ ApplicationWindow {
                 id: split_webtoon_row
                 objectName: "split_webtoon_row"
                 visible: false  // hide by default, will be show if webtoon is detected or selected
-                Rectangle {  // No split
-                    width: 64
-                    height: 96
-                    color: "green"
-                    RoundButton {
-                        radius: 0
-                        anchors.fill: parent
-                        Image {
+
+                ColumnLayout {
+                    Rectangle {  // No split
+                        width: 64
+                        height: 96
+                        color: "green"
+                        RoundButton {
+                            radius: 0
                             anchors.fill: parent
-                            source: "mangle/img/split-webtoon.png"
+                            Image {
+                                anchors.fill: parent
+                                source: "mangle/img/split-webtoon.png"
+                            }
                         }
+                    }
+
+                    // Fast message display to help the user know why we did choose one or the other
+                    Text {
+                        id: split_webtoon_row_text
+                        objectName: "split_webtoon_row_text"
+                        text: ""
+                        color: "green"
+                        font.pixelSize: 10
+
+                        OpacityAnimator {
+                            id: split_webtoon_row_text_opacity_animation
+                            target: split_webtoon_row_text
+                            from: 1.0
+                            to: 0.0
+                            duration: 10000 // 10 seconds
+                            easing.type: Easing.InQuart
+                            onRunningChanged: {}
+                        }
+
+                        // Reset opacity when text changes to make it visible again
+                        onTextChanged: {
+                            opacity = 1
+                            split_webtoon_row_text_opacity_animation.start()
+                        }
+
                     }
                 }
             }
