@@ -71,10 +71,61 @@ ApplicationWindow {
                     border.color: "black"
                     border.width: 1
                     Text {
+                        id: drag_and_drop_text
                         anchors.centerIn: parent
-                        text: "Drop files here"
+                        text: "Drag & Drop Your Manga or Webtoon images or directories Here!"
                         color: "purple"
                         visible: file_list.count === 0
+                        font.pixelSize: 20
+
+                        // Color animation
+                        SequentialAnimation on color {
+                            id: sequentialAnimation
+                            loops: Animation.Infinite
+                            ColorAnimation {
+                                to: "green"; duration: 1000
+                            }
+                            ColorAnimation {
+                                to: "purple"; duration: 1000
+                            }
+                        }
+
+                        // Pulse animation
+                        ScaleAnimator {
+                            id: scaleAnimator
+                            target: drag_and_drop_text
+                            from: 1.0
+                            to: 1.1
+                            duration: 500
+
+                            easing.type: Easing.InOutQuad
+                            onRunningChanged: {
+                                if (!running) {
+                                    // Once the scale up animation completes, start the scale down animation
+                                    scaleDownAnimator.start();
+                                }
+                            }
+                        }
+                        ScaleAnimator {
+                            id: scaleDownAnimator
+                            target: drag_and_drop_text
+                            from: 1.1
+                            to: 1.0
+                            duration: 500 // Duration for scaling down to match the scale up duration
+                            easing.type: Easing.InOutQuad
+                            onRunningChanged: {
+                                if (!running) {
+                                    // Once the scale up animation completes, start the scale down animation
+                                    scaleAnimator.start();
+                                }
+                            }
+                        }
+                        Component.onCompleted: {
+                            scaleAnimator.start();
+                            sequentialAnimation.start();
+                        }
+
+
                     }
                     Drag.active: true
                     Drag.hotSpot.x: width / 2
