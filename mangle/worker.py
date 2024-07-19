@@ -123,6 +123,10 @@ class Worker(QObject):
         elif ARCHIVE_FORMATS.PDF == output_format:
             self._archive = ArchivePDF(self._book_path, parameters.get_title(), parameters.get_device())
         
+        # We did finish the setup, we can now save the parameters
+        parameters.save_parameters()
+        
+        # Now work!
         for i in range(len(parameters.get_images())):
             self._tick()
             pct = int(i / len(parameters.get_images()) * 100)

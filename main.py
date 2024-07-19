@@ -18,6 +18,7 @@ if __name__ == "__main__":
     # File list elements display
     file_path_model = FilePathModel()
     
+    
     # Create the backend object
     ui_controller = UIController(engine, file_path_model)
     print(f"UI Controller: {ui_controller}")

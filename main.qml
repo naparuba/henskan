@@ -26,7 +26,7 @@ ApplicationWindow {
             spacing: 10
             Text {
                 color: "white"
-                text: full_path.length > 100 ? "..." + full_path.slice(-100) : full_path   // Limit size because dialog is not so big
+                text: full_path.length > 85 ? "..." + full_path.slice(-85) : full_path   // Limit size because dialog is not so big
             }
         }
     }
@@ -47,7 +47,7 @@ ApplicationWindow {
         ColumnLayout {
             id: col_file_list
             objectName: "col_file_list"
-            Layout.minimumWidth: 500
+            Layout.minimumWidth: 300
 
 
             ListView {
@@ -288,7 +288,7 @@ ApplicationWindow {
                     currentIndex: 12  // Kobo Libra H2O, because it's mine ^^
                     onCurrentIndexChanged: {
                         console.log("Current index changed to", currentIndex, "model[currentIndex] =", model[currentIndex])
-                        ui_controller.on_device_changed(model[currentIndex])
+                        ui_controller.on_device_changed(model[currentIndex], currentIndex)
                     }
                     //popup.Material.foreground: "red"
                     Material.accent: "green"  // border

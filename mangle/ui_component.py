@@ -51,6 +51,7 @@ class UIInput(UIComponent):
     
     def set_value(self, s):
         # type: (str) -> None
+        print(f'UIInput:: {self._id} => set_value: {s}')
         self._value = s
         if not self._value:
             self.got_no_value()
@@ -119,6 +120,12 @@ class UIComboBox(UIComponent):
     def enable(self):
         super().enable()
         self._dom_element.setProperty("color", "green")
+    
+    
+    def set_value(self, s, index):
+        # type: (str, int) -> None
+        print(f'UIComboBox:: {self._id} => set_value: {s} {index}')
+        self._dom_element.setProperty("currentIndex", index)
 
 
 class UIProgressBar(UIComponent):

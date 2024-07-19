@@ -107,7 +107,11 @@ class EReaderData:
     def get_archive_format(device):
         # type: (str) -> ARCHIVE_FORMATS
         return EReaderData.Profiles[device][2]
-
+    
+    
+    @staticmethod
+    def is_device_exists(device):
+        return device in EReaderData.Profiles
 
 # decorate a function that use image, *** and if there
 # is an exception raise by PIL (IOError) then return

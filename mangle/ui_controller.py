@@ -1,5 +1,6 @@
 import os
 import random
+import re
 from typing import LiteralString
 
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
@@ -54,6 +55,10 @@ class UIController(QObject):
         self._col_parameters.setProperty("visible", False)
         self._col_convert = self._find_dom_id('col_convert')
         self._col_convert.setProperty("visible", False)
+        
+        parameters.load_previous_parameters()
+        
+        self._set_device(parameters.get_device(), parameters.get_device_index())
     
     
     @pyqtSlot()
@@ -81,6 +86,10 @@ class UIController(QObject):
     @pyqtSlot(str)
     def on_title_changed(self, text):
         print(f"Title changed: {text}")
+        self._set_title(text)
+    
+    
+    def _set_title(self, text):
         parameters.set_title(text)
         
         self._components['title_input'].set_value(text)
@@ -131,8 +140,37 @@ class UIController(QObject):
         self._check_for_convert_ready()
     
     
+    # We are looking for the most less level directory that is common to ALL image paths
+    # and this will give us the title
+    def _guess_title(self):
+        print(f'UIController::_guess_title')
+        
+        image_paths = parameters.get_images()
+        
+        if not image_paths:
+            return
+        
+        # Get the common path
+        common_path = os.path.commonpath(image_paths)
+        print(f'Common path: {common_path}')
+        
+        # Get the title
+        raw_title = os.path.basename(common_path)
+        print(f'raw_title: {raw_title}')
+        
+        # Clean all that is between [] and () in this string
+        title = re.sub(r'\[.*?\]', '', raw_title)
+        title = re.sub(r'\(.*?\)', '', title)
+        title = title.strip()
+        
+        print(f'Final title: {title}')
+        self._set_title(title)
+    
+    
     def _guess_parameters(self):
         print(f'UIController::_guess_parameters')
+        
+        self._guess_title()
         
         nb_random_need = 20
         
@@ -186,6 +224,10 @@ class UIController(QObject):
         
         for component in self._components.values():
             component.enable()
+        
+        # Now it's ready, we can load the output directory from the parameters
+        # can be the default ~ or the last one saved
+        self._set_output_directory(parameters.get_output_directory())
     
     
     def __add_directory(self, directory):
@@ -305,10 +347,16 @@ class UIController(QObject):
             progress_bar.setProperty("value", value)
     
     
-    @pyqtSlot(str)
-    def on_device_changed(self, value):
-        print(f"Selected value: {value}")
-        parameters.set_device(value)
+    @pyqtSlot(str, int)
+    def on_device_changed(self, str_value, index):
+        print(f"Selected value: {str_value} {index}")
+        self._set_device(str_value, index)
+    
+    
+    def _set_device(self, value, index):
+        parameters.set_device(value, index)
+        
+        self._components['device_combo_box'].set_value(value, index)
     
     
     directorySelected = pyqtSignal(str)
@@ -316,10 +364,17 @@ class UIController(QObject):
     
     @pyqtSlot()
     def select_output_directory(self):
-        directory = QFileDialog.getExistingDirectory(None, "Select Directory", "", options=QFileDialog.Option.ShowDirsOnly)
-        if directory:
-            print(f"Selected directory: {directory}")
-            parameters.set_output_directory(directory)
+        directory = QFileDialog.getExistingDirectory(None, "Select Directory", parameters.get_output_directory(),
+                                                     options=QFileDialog.Option.ShowDirsOnly)
+        self._set_output_directory(directory)
+    
+    
+    def _set_output_directory(self, directory):
+        if not directory or not os.path.exists(directory) or not os.path.isdir(directory):
+            print(f'Wrong output directory: {directory}')
+            return
+        print(f"Selected directory: {directory}")
+        parameters.set_output_directory(directory)
         # Update the UI
         self._components['output_directory_input'].set_value(directory)
         
