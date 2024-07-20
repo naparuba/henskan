@@ -167,7 +167,7 @@ ApplicationWindow {
                                 Image {
                                     id: manga_button_image
                                     anchors.fill: parent
-                                    source: "mangle/img/manga.png"
+                                    source: "../img/manga.png"
                                 }
                                 onClicked: {
                                     ui_controller.on_button_manga()
@@ -186,7 +186,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 Image {
                                     anchors.fill: parent
-                                    source: "mangle/img/webtoon.png"
+                                    source: "../img/webtoon.png"
                                 }
                                 onClicked: {
                                     ui_controller.on_button_webtoon()
@@ -255,7 +255,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 Image {
                                     anchors.fill: parent
-                                    source: "mangle/img/no-split.png"
+                                    source: "../img/no-split.png"
                                 }
                                 onClicked: {
                                     ui_controller.on_button_no_split()
@@ -273,7 +273,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 Image {
                                     anchors.fill: parent
-                                    source: "mangle/img/split-left-right.png"
+                                    source: "../img/split-left-right.png"
                                 }
                                 onClicked: {
                                     ui_controller.on_button_split_left_then_right()
@@ -291,7 +291,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 Image {
                                     anchors.fill: parent
-                                    source: "mangle/img/split-right-left.png"
+                                    source: "../img/split-right-left.png"
                                 }
                                 onClicked: {
                                     ui_controller.on_button_split_right_then_left()
@@ -348,7 +348,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             Image {
                                 anchors.fill: parent
-                                source: "mangle/img/split-webtoon.png"
+                                source: "../img/split-webtoon.png"
                             }
                         }
                     }
@@ -480,7 +480,7 @@ ApplicationWindow {
                         id: col_convert_img
                         objectName: "col_convert_img"
                         anchors.fill: parent
-                        source: "mangle/img/shock_off.png"
+                        source: "../img/shock_off.png"
                     }
                     onClicked: {
                         ui_controller.on_convert_clicked()

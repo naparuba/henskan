@@ -1,3 +1,4 @@
+import os
 import sys
 
 
@@ -7,6 +8,7 @@ from PyQt6.QtQml import QQmlApplicationEngine
 
 from mangle.ui_controller import UIController
 from mangle.file_path_model import FilePathModel
+import mangle
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -29,7 +31,9 @@ if __name__ == "__main__":
     print(f"Backend is set")
     
     # Load the QML file
-    engine.load(QUrl.fromLocalFile('main.qml'))
+    ui_dir = os.path.dirname(mangle.__file__)
+    ui_file = os.path.join(ui_dir, 'ui', 'main.qml')
+    engine.load(QUrl.fromLocalFile(ui_file))
     print(f"engine loaded")
     
     # Get the controller know about parameters controllers, and disabled them all

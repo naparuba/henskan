@@ -99,12 +99,12 @@ class UIRectButtonConvert(UIRectButton):
     
     def disable(self):
         super().disable()
-        self._change_image('mangle/img/shock_off.png')
+        self._change_image('../img/shock_off.png')
     
     
     def enable(self):
         super().enable()
-        self._change_image('mangle/img/shock_on.png')
+        self._change_image('../img/shock_on.png')
 
 
 class UIComboBox(UIComponent):
