@@ -27,7 +27,7 @@ ApplicationWindow {
             spacing: 10
             Text {
                 color: "white"
-                text: full_path.length > 85 ? "..." + full_path.slice(-85) : full_path   // Limit size because dialog is not so big
+                text: full_path.length > 80 ? "..." + full_path.slice(-80) : full_path   // Limit size because dialog is not so big
             }
         }
     }
