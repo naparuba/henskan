@@ -113,6 +113,7 @@ class EReaderData:
     def is_device_exists(device):
         return device in EReaderData.Profiles
 
+
 # decorate a function that use image, *** and if there
 # is an exception raise by PIL (IOError) then return
 # the original image because PIL cannot manage it
