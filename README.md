@@ -72,10 +72,8 @@ from source.
 ## Building for Windows ##
 
 On Windows you can build with the command:
+   pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --noconsole --onefile --icon=mangle/img/splash.jpg main.py
 
-    venv\Scripts\pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --onefile main.py
-
- C:\SOURCES\mangle-nap\venv\Scripts\pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --onedir main.py   ?
 ## Screenshots ##
 
 [![Main window](https://foosoft.net/projects/mangle/img/main-thumb.png)](https://foosoft.net/projects/mangle/img/main.png)

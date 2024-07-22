@@ -3,6 +3,7 @@ import sys
 
 
 from PyQt6.QtCore import QObject, pyqtSlot, QUrl, pyqtSignal, QStringListModel, QAbstractListModel, QModelIndex, Qt, QVariant
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QFileDialog
 from PyQt6.QtQml import QQmlApplicationEngine
 
@@ -11,7 +12,9 @@ from mangle.file_path_model import FilePathModel
 import mangle
 
 if __name__ == "__main__":
+    lib_dir = os.path.dirname(mangle.__file__)
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.join(lib_dir, 'img', 'splash.jpg')))
     
     # Create the QML application engine
     engine = QQmlApplicationEngine()
@@ -31,8 +34,8 @@ if __name__ == "__main__":
     print(f"Backend is set")
     
     # Load the QML file
-    ui_dir = os.path.dirname(mangle.__file__)
-    ui_file = os.path.join(ui_dir, 'ui', 'main.qml')
+    
+    ui_file = os.path.join(lib_dir, 'ui', 'main.qml')
     engine.load(QUrl.fromLocalFile(ui_file))
     print(f"engine loaded")
     

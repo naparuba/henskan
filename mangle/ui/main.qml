@@ -20,6 +20,47 @@ ApplicationWindow {
     Material.theme: Material.Dark
     Material.accent: Material.Purple
 
+    // Splash Screen
+    Rectangle {
+        id: splash_screen
+        anchors.fill: parent
+        color: "black" // Background color of the splash screen
+
+        Image {
+            anchors.centerIn: parent
+            source: "../img/splash.jpg" // Path to your splash image
+        }
+
+        Timer {
+            id: splash_screen_timer
+            interval: 1000 // Duration of the splash screen in milliseconds
+            onTriggered: {
+                //splash_screen.visible = false // Hide the splash screen
+                splash_screen_opacity_animation.start() // start to hide the splash screen
+                //main_layout.visible = true // Show the main layout
+            }
+            running: true
+            repeat: false
+        }
+
+        OpacityAnimator {
+            id: splash_screen_opacity_animation
+            target: splash_screen
+            from: 1.0
+            to: 0.0
+            duration: 1000 // 1 seconds
+            easing.type: Easing.InQuart
+            onRunningChanged: {
+                if (!running) {
+                    splash_screen.visible = false // make disappear completely
+                    main_layout.visible = true // Show the main layout
+                }
+
+            }
+        }
+    }
+
+
     // Render for the path list elements
     Component {
         id: file_path_renderer
@@ -43,6 +84,8 @@ ApplicationWindow {
 
 
     RowLayout {
+        id: main_layout
+        visible: false // display after splash screen
         anchors.fill: parent
         anchors.margins: 10
         ColumnLayout {
