@@ -465,13 +465,14 @@ ApplicationWindow {
         ColumnLayout {
             id: col_convert
             objectName: "col_convert"
-
+            Layout.alignment: Qt.AlignHCenter
 
             Rectangle { // Convert button
                 id: convert_rect_button
                 objectName: "convert_rect_button"
                 width: 128
                 height: 128
+                Layout.alignment: Qt.AlignHCenter
 
                 RoundButton {
                     radius: 0
@@ -493,6 +494,7 @@ ApplicationWindow {
                 id: progress_bar
                 objectName: "progress_bar"
                 width: parent.width
+                Layout.alignment: Qt.AlignHCenter
                 from: 0
                 to: 100
                 value: 0  // Set initial value
