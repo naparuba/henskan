@@ -64,6 +64,7 @@ ApplicationWindow {
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AsNeeded
                 }
+                clip: true
 
                 Rectangle {
                     anchors.fill: parent
