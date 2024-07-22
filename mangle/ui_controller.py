@@ -117,6 +117,7 @@ class UIController(QObject):
         # But enable the progress bar
         self._components['progress_bar'].enable()
     
+    
     @pyqtSlot(str)
     def on_files_dropped(self, file_url_str):
         print(f"File dropped: ZZ{file_url_str}ZZ  {type(file_url_str)}")
@@ -277,7 +278,7 @@ class UIController(QObject):
         self._enable_manga_display()
         self._send_message_to_manga_webtoon_row('Switch to Manga')
         self._send_message_to_manga_split_row('You must choose your split mode')
-
+    
     
     def _enable_manga_display(self):
         # Switch display
