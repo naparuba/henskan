@@ -499,6 +499,16 @@ ApplicationWindow {
                 to: 100
                 value: 0  // Set initial value
             }
+
+            Text {
+                id: progress_text
+                objectName: "progress_text"
+                text: ""
+                color: "green"
+                font.pixelSize: 16
+
+
+            }
         }
 
     }

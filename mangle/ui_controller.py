@@ -367,7 +367,9 @@ class UIController(QObject):
         self.worker = Worker()
         self.worker.moveToThread(self.thread)
         self.worker.updateProgress.connect(self.update_progress_bar)
+        self.worker.add_progress_text(self._find_dom_id('progress_text'))
         self.thread.started.connect(self.worker.run)
+        
         self.thread.start()
     
     

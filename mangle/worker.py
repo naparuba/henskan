@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import traceback
+from typing import Any
 
 from PyQt6.QtCore import QObject, pyqtSignal, QThread, QUrl
 from PyQt6.QtGui import QDesktopServices
@@ -15,6 +16,16 @@ from .parameters import parameters
 
 class Worker(QObject):
     updateProgress = pyqtSignal(int)  # will be called
+    
+    _progress_text: Any
+    
+    
+    def add_progress_text(self, progress_text_dom):
+        self._progress_text = progress_text_dom
+    
+    
+    def set_progress_text(self, text):
+        self._progress_text.setProperty("text", text)
     
     
     def _convert_and_save(self, source, target, split_right=False, split_left=False):
@@ -108,6 +119,16 @@ class Worker(QObject):
         self._index_value += 1
     
     
+    def _display_sec_into_humain(self, sec):
+        # type: (float) -> str
+        if sec < 60:
+            return f'{sec:.0f}s'
+        elif sec < 3600:
+            return f'{sec / 60:.0f}m'
+        else:
+            return f'{sec / 3600:.0f}h'
+    
+    
     def run(self):
         self._index_value = 0
         self._split_page_offset = 0
@@ -126,11 +147,24 @@ class Worker(QObject):
         # We did finish the setup, we can now save the parameters
         parameters.save_parameters()
         
+        nb_images = len(parameters.get_images())
+        start = time.time()
         # Now work!
-        for i in range(len(parameters.get_images())):
+        for i in range(nb_images):
             self._tick()
-            pct = int(i / len(parameters.get_images()) * 100)
+            pct_float = float(i) / len(parameters.get_images())
+            pct = min(100, int(pct_float * 100))
             self.updateProgress.emit(pct)
+            elapsed = time.time() - start
+            if i >= 5:
+                estimated_time = elapsed / pct_float
+                print(f'Estimated time: {estimated_time} = {elapsed} / {pct_float}')
+                remaining_time_float = max(0.0, estimated_time - elapsed)
+                estimated_time_str = f'Estimated time: {self._display_sec_into_humain(remaining_time_float)}'
+            else:
+                estimated_time_str = ''
+            
+            self.set_progress_text(f'Processing {i + 1}/{nb_images}<br/>{estimated_time_str}')
             QThread.msleep(1)
         print(f'Worker::run::Finished processing images')
         
@@ -141,6 +175,9 @@ class Worker(QObject):
         if os.path.exists(self._book_path):
             print(f'Cleaning temporary directory {self._book_path}')
             shutil.rmtree(self._book_path)
+        
+        self.updateProgress.emit(100)  # Be sure to round to 100 the update
+        self.set_progress_text(f'Finish after {self._display_sec_into_humain(time.time() - start)}')
         
         # Show the output directory so the user can quickly access it
         QDesktopServices.openUrl(QUrl.fromLocalFile(directory))
