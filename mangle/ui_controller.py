@@ -110,6 +110,13 @@ class UIController(QObject):
         return os.path.isfile(filename) and self.__get_file_extension(filename) in image_exts
     
     
+    def start_converting(self):
+        for component in self._components.values():
+            component.disable_interaction()
+        
+        # But enable the progress bar
+        self._components['progress_bar'].enable()
+    
     @pyqtSlot(str)
     def on_files_dropped(self, file_url_str):
         print(f"File dropped: ZZ{file_url_str}ZZ  {type(file_url_str)}")
@@ -367,6 +374,7 @@ class UIController(QObject):
         self.worker = Worker()
         self.worker.moveToThread(self.thread)
         self.worker.updateProgress.connect(self.update_progress_bar)
+        self.worker.add_ui_controller(self)
         self.worker.add_progress_text(self._find_dom_id('progress_text'))
         self.thread.started.connect(self.worker.run)
         

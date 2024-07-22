@@ -18,8 +18,11 @@ class UIComponent:
         return self.__find_child(self._dom_element, dom_id)
     
     
-    def disable(self):
+    def disable_interaction(self):
         self._dom_element.setProperty('enabled', False)
+    
+    def disable(self):
+        self.disable_interaction()
     
     
     def enable(self):

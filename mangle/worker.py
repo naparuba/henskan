@@ -18,7 +18,11 @@ class Worker(QObject):
     updateProgress = pyqtSignal(int)  # will be called
     
     _progress_text: Any
+    _ui_controller: Any
     
+    
+    def add_ui_controller(self, ui_controller):
+        self._ui_controller = ui_controller
     
     def add_progress_text(self, progress_text_dom):
         self._progress_text = progress_text_dom
@@ -146,6 +150,7 @@ class Worker(QObject):
         
         # We did finish the setup, we can now save the parameters
         parameters.save_parameters()
+        self._ui_controller.start_converting()
         
         nb_images = len(parameters.get_images())
         start = time.time()
