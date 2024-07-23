@@ -69,15 +69,14 @@ ApplicationWindow {
     // Logo
     Image {
         id: logo
-        z: 1
+        z: 1  // always on top
         anchors.top: parent.top
         anchors.topMargin: 200
         anchors.right: parent.right
-        anchors.rightMargin: 450
-        //anchors.horizontalCenter: parent.horizontalCenter
+        anchors.rightMargin: 400
         source: "../img/henskan.png"
         height: 100
-        width: 100
+        width: 300
 
         // 1: First bump in the middle of the screen
         SequentialAnimation on anchors.topMargin {
@@ -111,7 +110,7 @@ ApplicationWindow {
         SequentialAnimation on anchors.rightMargin {
             id: logo_move_right_animation
             NumberAnimation {
-                from: 450
+                from: 400
                 to: 50
                 duration: 300
                 easing.type: Easing.InQuart
@@ -123,7 +122,7 @@ ApplicationWindow {
             id: logo_to_top_scale_down
             target: logo
             from: 1.0
-            to: 1.5
+            to: 1.3
             duration: 300
             easing.type: Easing.InOutQuad
         }
@@ -143,7 +142,8 @@ ApplicationWindow {
             spacing: 10
             Text {
                 color: "white"
-                text: full_path.length > 80 ? "..." + full_path.slice(-80) : full_path   // Limit size because dialog is not so big
+                // NOTE: the " " is an hack to avoid to be in the green border on the let=ft
+                text:  full_path.length > 80 ? " " + "..." + full_path.slice(-80) : " " + full_path   // Limit size because dialog is not so big
             }
         }
     }
@@ -188,11 +188,16 @@ ApplicationWindow {
                     anchors.fill: parent
                     color: file_list.count === 0 ? "grey" : "transparent"
                     border.color: file_list.count === 0 ? "black" : "green"
+
+                    // HACK: avoid being border cut
+                    anchors.topMargin: 1
+                    anchors.leftMargin: 1
+
                     border.width: 1
                     Text {
                         id: drag_and_drop_text
                         anchors.centerIn: parent
-                        text: "Drag & Drop Your Manga or Webtoon images or directories Here!"
+                        text: "🗂️➟ Drag & Drop Your Manga or Webtoon images or directories Here! 💖💗🥰💞"
                         color: "purple"
                         visible: file_list.count === 0
                         font.pixelSize: 20
