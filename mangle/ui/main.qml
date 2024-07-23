@@ -197,7 +197,7 @@ ApplicationWindow {
                     Text {
                         id: drag_and_drop_text
                         anchors.centerIn: parent
-                        text: "🗂️➟ Drag & Drop Your Manga or Webtoon images or directories Here! 💖💗🥰💞"
+                        text: "🗂️➟ Drag & drop Your Manga or Webtoon images/directories Here! 💖💗🥰💞"
                         color: "purple"
                         visible: file_list.count === 0
                         font.pixelSize: 20
