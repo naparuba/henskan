@@ -74,6 +74,10 @@ from source.
 On Windows you can build with the command:
    pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --noconsole --onefile --icon=mangle/img/splash.jpg main.py
 
+## Logo:
+Generated with https://fontmeme.com/fonts/badaboom-bb-font/ & gimp
+
+
 ## Screenshots ##
 
 [![Main window](https://foosoft.net/projects/mangle/img/main-thumb.png)](https://foosoft.net/projects/mangle/img/main.png)

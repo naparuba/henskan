@@ -20,6 +20,7 @@ ApplicationWindow {
     Material.theme: Material.Dark
     Material.accent: Material.Purple
 
+
     // Splash Screen
     Rectangle {
         id: splash_screen
@@ -54,12 +55,86 @@ ApplicationWindow {
                 if (!running) {
                     splash_screen.visible = false // make disappear completely
                     main_layout.visible = true // Show the main layout
+                    logo_bump_animation.stop() // LOGO: Do not bump anymore
+                    logo_move_top_animation.start(); // LOGO: move to top
+                    logo_move_right_animation.start(); // LOGO: move to right
+                    logo_to_top_scale_down.start(); // LOGO: scale down
                 }
 
             }
         }
     }
 
+
+    // Logo
+    Image {
+        id: logo
+        z: 1
+        anchors.top: parent.top
+        anchors.topMargin: 200
+        anchors.right: parent.right
+        anchors.rightMargin: 450
+        //anchors.horizontalCenter: parent.horizontalCenter
+        source: "../img/henskan.png"
+        height: 100
+        width: 100
+
+        // 1: First bump in the middle of the screen
+        SequentialAnimation on anchors.topMargin {
+            id: logo_bump_animation
+            NumberAnimation {
+                from: 400;
+                to: 380;
+                duration: 500;
+            }
+            NumberAnimation {
+                from: 380;
+                to: 400;
+                duration: 300;
+                easing.type: Easing.InQuart
+            }
+            loops: Animation.Infinite
+        }
+
+
+        // 2: Then when finish move quickly to the top
+        SequentialAnimation on anchors.topMargin {
+            id: logo_move_top_animation
+            NumberAnimation {
+                from: 380
+                to: 50
+                duration: 300
+                easing.type: Easing.InQuart
+            }
+        }
+
+        SequentialAnimation on anchors.rightMargin {
+            id: logo_move_right_animation
+            NumberAnimation {
+                from: 450
+                to: 50
+                duration: 300
+                easing.type: Easing.InQuart
+            }
+        }
+
+        // Scaledown to 0.8 so it fit upper
+        ScaleAnimator {
+            id: logo_to_top_scale_down
+            target: logo
+            from: 1.0
+            to: 1.5
+            duration: 300
+            easing.type: Easing.InOutQuad
+        }
+
+        Component.onCompleted: {
+            logo_bump_animation.start();
+            logo_move_top_animation.stop();
+            logo_move_right_animation.stop();
+            logo_to_top_scale_down.stop();
+        }
+    }
 
     // Render for the path list elements
     Component {
