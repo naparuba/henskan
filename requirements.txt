@@ -1,5 +1,5 @@
 pillow==10.4.0
-PyQt6==6.7.0
+PyQt6==6.7.1
 reportlab==4.2.2
 pyinstaller==6.9.0
 ImageHash==4.3.1
