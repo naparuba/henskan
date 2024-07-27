@@ -17,6 +17,8 @@ import json
 import os
 from pathlib import Path
 
+from mangle.util import natural_key
+
 
 class Parameters(object):
     DefaultDevice = 'Kobo Libra H2O'
@@ -170,5 +172,11 @@ class Parameters(object):
     def get_images(self):
         return self._images
 
+    # Sort images by natural key (so that 2.jpg comes before 10.jpg), after remove duplicates
+    def sort_images(self):
+        
+        sorted_images = sorted(set(self._images), key=natural_key)
+        self._images = sorted_images
+        print(f'Parameters:: Sorted images: {self._images}')
 
 parameters = Parameters()

@@ -152,6 +152,9 @@ class Worker(QObject):
         parameters.save_parameters()
         self._ui_controller.start_converting()
         
+        # sort images before processing
+        parameters.sort_images()
+        
         nb_images = len(parameters.get_images())
         start = time.time()
         # Now work!
