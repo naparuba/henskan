@@ -18,7 +18,6 @@
 
 import os.path
 import time
-import traceback
 
 from reportlab.pdfgen import canvas
 

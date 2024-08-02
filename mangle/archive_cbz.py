@@ -18,7 +18,6 @@
 
 import os.path
 import time
-import traceback
 from zipfile import ZipFile, ZIP_STORED
 
 

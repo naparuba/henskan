@@ -6,6 +6,7 @@ from PyQt6.QtQml import QQmlApplicationEngine
 
 from .parameters import parameters
 
+
 class FilePathModel(QAbstractListModel):
     FullPathRole = Qt.ItemDataRole.UserRole + 1
     SizeRole = Qt.ItemDataRole.UserRole + 2

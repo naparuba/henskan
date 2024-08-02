@@ -24,6 +24,7 @@ class Worker(QObject):
     def add_ui_controller(self, ui_controller):
         self._ui_controller = ui_controller
     
+    
     def add_progress_text(self, progress_text_dom):
         self._progress_text = progress_text_dom
     
