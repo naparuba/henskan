@@ -7,12 +7,12 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QFileDialog
 from PyQt6.QtQml import QQmlApplicationEngine
 
-from mangle.ui_controller import UIController
-from mangle.file_path_model import FilePathModel
-import mangle
+from henskan.ui_controller import UIController
+from henskan.file_path_model import FilePathModel
+import henskan
 
 if __name__ == "__main__":
-    lib_dir = os.path.dirname(mangle.__file__)
+    lib_dir = os.path.dirname(henskan.__file__)
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(os.path.join(lib_dir, 'img', 'splash.jpg')))
     
