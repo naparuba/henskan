@@ -6,7 +6,8 @@ dist
 *.cbz
 *.bat
 .idea/
-mangle/tmp/*
+henskan/tmp/*
+henskan/resources/*
 
 *.DS_Store
 .AppleDouble
