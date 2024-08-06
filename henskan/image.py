@@ -13,7 +13,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import io
 import time
+import traceback
+from enum import Enum
 from math import ceil
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
@@ -29,65 +32,93 @@ def set_debug():
     DEBUG = True
 
 
+def _get_palette(size):
+    # type: (int) -> list
+    _palette = []
+    for i in range(size):
+        _palette.extend([i, i, i])
+    return _palette
+
+
+Palette4 = [
+    0x00, 0x00, 0x00,
+    0x55, 0x55, 0x55,
+    0xaa, 0xaa, 0xaa,
+    0xff, 0xff, 0xff
+]
+
+Palette15a = [
+    0x00, 0x00, 0x00,
+    0x11, 0x11, 0x11,
+    0x22, 0x22, 0x22,
+    0x33, 0x33, 0x33,
+    0x44, 0x44, 0x44,
+    0x55, 0x55, 0x55,
+    0x66, 0x66, 0x66,
+    0x77, 0x77, 0x77,
+    0x88, 0x88, 0x88,
+    0x99, 0x99, 0x99,
+    0xaa, 0xaa, 0xaa,
+    0xbb, 0xbb, 0xbb,
+    0xcc, 0xcc, 0xcc,
+    0xdd, 0xdd, 0xdd,
+    0xff, 0xff, 0xff,
+]
+
+Palette15b = [
+    0x00, 0x00, 0x00,
+    0x11, 0x11, 0x11,
+    0x22, 0x22, 0x22,
+    0x33, 0x33, 0x33,
+    0x44, 0x44, 0x44,
+    0x55, 0x55, 0x55,
+    0x77, 0x77, 0x77,
+    0x88, 0x88, 0x88,
+    0x99, 0x99, 0x99,
+    0xaa, 0xaa, 0xaa,
+    0xbb, 0xbb, 0xbb,
+    0xcc, 0xcc, 0xcc,
+    0xdd, 0xdd, 0xdd,
+    0xee, 0xee, 0xee,
+    0xff, 0xff, 0xff,
+]
+
+Palette16 = [
+    0x00, 0x00, 0x00,
+    0x11, 0x11, 0x11,
+    0x22, 0x22, 0x22,
+    0x33, 0x33, 0x33,
+    0x44, 0x44, 0x44,
+    0x55, 0x55, 0x55,
+    0x66, 0x66, 0x66,
+    0x77, 0x77, 0x77,
+    0x88, 0x88, 0x88,
+    0x99, 0x99, 0x99,
+    0xaa, 0xaa, 0xaa,
+    0xbb, 0xbb, 0xbb,
+    0xcc, 0xcc, 0xcc,
+    0xdd, 0xdd, 0xdd,
+    0xee, 0xee, 0xee,
+    0xff, 0xff, 0xff,
+]
+
+
 class EReaderData:
-    Palette4 = [
-        0x00, 0x00, 0x00,
-        0x55, 0x55, 0x55,
-        0xaa, 0xaa, 0xaa,
-        0xff, 0xff, 0xff
-    ]
-    
-    Palette15a = [
-        0x00, 0x00, 0x00,
-        0x11, 0x11, 0x11,
-        0x22, 0x22, 0x22,
-        0x33, 0x33, 0x33,
-        0x44, 0x44, 0x44,
-        0x55, 0x55, 0x55,
-        0x66, 0x66, 0x66,
-        0x77, 0x77, 0x77,
-        0x88, 0x88, 0x88,
-        0x99, 0x99, 0x99,
-        0xaa, 0xaa, 0xaa,
-        0xbb, 0xbb, 0xbb,
-        0xcc, 0xcc, 0xcc,
-        0xdd, 0xdd, 0xdd,
-        0xff, 0xff, 0xff,
-    ]
-    
-    Palette15b = [
-        0x00, 0x00, 0x00,
-        0x11, 0x11, 0x11,
-        0x22, 0x22, 0x22,
-        0x33, 0x33, 0x33,
-        0x44, 0x44, 0x44,
-        0x55, 0x55, 0x55,
-        0x77, 0x77, 0x77,
-        0x88, 0x88, 0x88,
-        0x99, 0x99, 0x99,
-        0xaa, 0xaa, 0xaa,
-        0xbb, 0xbb, 0xbb,
-        0xcc, 0xcc, 0xcc,
-        0xdd, 0xdd, 0xdd,
-        0xee, 0xee, 0xee,
-        0xff, 0xff, 0xff,
-    ]
-    
     Profiles = {
         'Kindle 1':                         ((600, 800), Palette4, ARCHIVE_FORMATS.PDF),
         'Kindle 2/3/Touch':                 ((600, 800), Palette15a, ARCHIVE_FORMATS.PDF),
         'Kindle 4 & 5':                     ((600, 800), Palette15b, ARCHIVE_FORMATS.PDF),
         'Kindle DX/DXG':                    ((824, 1200), Palette15a, ARCHIVE_FORMATS.PDF),
         'Kindle Paperwhite 1 & 2':          ((758, 1024), Palette15b, ARCHIVE_FORMATS.PDF),
-        'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette15b, ARCHIVE_FORMATS.PDF),
+        'Kindle Paperwhite 3/Voyage/Oasis': ((1072, 1448), Palette16, ARCHIVE_FORMATS.PDF),
         'Kobo Mini/Touch':                  ((600, 800), Palette15b, ARCHIVE_FORMATS.CBZ),
         'Kobo Glo':                         ((768, 1024), Palette15b, ARCHIVE_FORMATS.CBZ),
         'Kobo Glo HD':                      ((1072, 1448), Palette15b, ARCHIVE_FORMATS.CBZ),
         'Kobo Aura':                        ((758, 1024), Palette15b, ARCHIVE_FORMATS.CBZ),
-        'Kobo Aura HD':                     ((1080, 1440), Palette15b, ARCHIVE_FORMATS.CBZ),
-        'Kobo Aura H2O':                    ((1080, 1430), Palette15a, ARCHIVE_FORMATS.CBZ),
-        'Kobo Libra H2O':                   ((1264, 1680), Palette15a, ARCHIVE_FORMATS.CBZ),
-        'Kobo Elipsa 2E':                   ((1440, 1872), Palette15a, ARCHIVE_FORMATS.CBZ),
+        'Kobo Aura HD':                     ((1080, 1440), Palette16, ARCHIVE_FORMATS.CBZ),
+        'Kobo Aura H2O':                    ((1080, 1430), Palette16, ARCHIVE_FORMATS.CBZ),
+        'Kobo Libra H2O':                   ((1264, 1680), Palette16, ARCHIVE_FORMATS.CBZ),
+        'Kobo Elipsa 2E':                   ((1440, 1872), Palette16, ARCHIVE_FORMATS.CBZ),
     }
     
     
@@ -124,6 +155,7 @@ def protect_bad_image(func):
         try:
             return func(*args, **kwargs)
         except (IOError, ValueError):  # Exception from PIL about bad image
+            print(f' * protect_bad_image:: Bad image, return original {traceback.format_exc()}')
             return args[0]
     
     
@@ -146,9 +178,95 @@ def _split_right(image):
     return image.crop((width_img // 2, 0, width_img, height_img))
 
 
+class PIXEL_CATEGORY(Enum):
+    WHITE = 1
+    BLACK = 2
+    GREY = 3
+    OTHER = 4
+
+
+def _detect_pixel_category(pixel):
+    # type: (tuple[int, int, int]) -> PIXEL_CATEGORY
+    if pixel[0] >= 255 and pixel[1] >= 255 and pixel[2] >= 255:
+        return PIXEL_CATEGORY.WHITE
+    elif pixel[0] <= 0 and pixel[1] <= 0 and pixel[2] <= 0:
+        return PIXEL_CATEGORY.BLACK
+    elif abs(pixel[0] - pixel[1]) < 10 and abs(pixel[0] - pixel[2]) < 10:  # a diff in 10 (on 255) is ok for "quite the same"
+        return PIXEL_CATEGORY.GREY
+    else:
+        return PIXEL_CATEGORY.OTHER
+
+
 @protect_bad_image
-def _quantize_image(image, palette):
+def _is_globally_grey__slow(image):
+    # type: (Image) -> bool
+    pixels = image.getdata()
+    
+    nb_pixels = len(pixels)
+    nb_pixels_in_colors_over_threshold = nb_pixels * 0.1  # if more than 10% of pixels are in colors, then it's not grey and we can stop the loop
+    nb_pixels_in_colors = 0
+    cats = {}
+    for pixel in pixels:
+        cat = _detect_pixel_category(pixel)
+        if cat not in cats:
+            cats[cat] = 0
+        cats[cat] += 1
+        if cat == PIXEL_CATEGORY.OTHER:
+            nb_pixels_in_colors += 1
+            if nb_pixels_in_colors > nb_pixels_in_colors_over_threshold:
+                print(f' too many pixels in colors, over 10%: {nb_pixels_in_colors} / {nb_pixels}')
+                return False
+    print(f' cats: {cats}')
+    total_pixels = cats.get(PIXEL_CATEGORY.WHITE, 0) + cats.get(PIXEL_CATEGORY.BLACK, 0) + cats.get(PIXEL_CATEGORY.GREY, 0) + cats.get(
+            PIXEL_CATEGORY.OTHER, 0)
+    nb_others = cats.get(PIXEL_CATEGORY.OTHER, 0)
+    pct_colors = nb_others / total_pixels * 100
+    print(f' pct_colors: {pct_colors:.2f}%')
+    is_grey = pct_colors < 10  # if less than 10% of colors, then it's mostly grey
+    return is_grey
+
+
+# Check if image is monochrome (1 channel or 3 identical channels)
+@protect_bad_image
+def _is_totally_greyscale__fast(image):
+    # type: ( Image) -> bool
+    if image.mode not in ("L", "RGB"):
+        # Unsupported image mode
+        return False
+    
+    if image.mode == "RGB":
+        rgb = image.split()
+        extrema = ImageChops.difference(rgb[0], rgb[1]).getextrema()[1]
+        print(f' extrema 1?  {extrema}')
+        if extrema >= 15:
+            return False
+        extrema = ImageChops.difference(rgb[0], rgb[2]).getextrema()[1]
+        print(f' extrema 2?  {extrema}')
+        if extrema >= 15:
+            return False
+    return True
+
+
+@protect_bad_image
+def _is_image_grey(image):
+    # type: (Image) -> bool
+    before = time.time()
+    is_grey = _is_totally_greyscale__fast(image)  # if True, then we can trust it's grey
+    print(f'{time.time() - before:.2f} GREYSCALE Image FAST => is_grey: {is_grey}')
+    
+    if not is_grey:  # maybe it's a grey with a little bit of colors, so must check for real colors presence
+        before_slow = time.time()
+        is_grey = _is_globally_grey__slow(image)
+        print(f'  {time.time() - before_slow:.2f} SLOW DETECT COLORS => is_grey: {is_grey}')
+        if is_grey:
+            print(f'  *********** WAS IN FACT GREY ***********')
+    return is_grey
+
+
+@protect_bad_image
+def _apply_grey_palette(image, palette):
     # type: (Image, list) -> Image
+    
     colors = len(palette) // 3
     if colors < 256:
         palette = palette + palette[:3] * (256 - colors)
@@ -157,6 +275,47 @@ def _quantize_image(image, palette):
     pal_img.putpalette(palette)
     
     return image.quantize(palette=pal_img)
+
+
+@protect_bad_image
+def _apply_basic_grey(image):
+    # type: (Image) -> Image
+    
+    return ImageOps.grayscale(image)
+
+
+@protect_bad_image
+def _quantize_image(image, palette):
+    # type: (Image, list) -> Image
+    
+    t0 = time.time()
+    img_palette = _apply_grey_palette(image, palette)
+    t1 = time.time()
+    img_basic_grey = _apply_basic_grey(image)
+    t2 = time.time()
+    
+    # Get image that is smaller in disk size
+    
+    # Save both images to buffers
+    with io.BytesIO() as temp_palette_file:
+        img_palette.save(temp_palette_file, format='PNG')
+        palette_file_size = len(temp_palette_file.getvalue())
+    t3 = time.time()
+    
+    with io.BytesIO() as temp_basic_file:
+        img_basic_grey.save(temp_basic_file, format='PNG')
+        basic_file_size = len(temp_basic_file.getvalue())
+    t4 = time.time()
+    
+    print(f'Times: Palette:{t1 - t0:.3f}s  Basic:{t2 - t1:.3f}s  Save-palette:{t3 - t2:.3f}s  Save-basic:{t4 - t3:.3f}s')
+    print(f'Sizes: Palette:{palette_file_size}  Basic:{basic_file_size}')
+    
+    # Get smaller one
+    if palette_file_size < basic_file_size:
+        print(f' * Quantize image => Using palette image')
+        return img_palette
+    print(f' * Quantize image => Using basic grey image')
+    return img_basic_grey
 
 
 @protect_bad_image
@@ -792,7 +951,7 @@ def convert_image(source, split_right=False, split_left=False):
         for image in images:
             image = _format_image_to_rgb(image)
             image = _resize_image(image, size)
-            image = _quantize_image(image, palette)
+            image = _apply_basic_grey(image)
             converted_images.append(image)
         
         return converted_images
@@ -812,7 +971,14 @@ def convert_image(source, split_right=False, split_left=False):
     image = _orient_image(image, size)
     # Adapt to the EReader native resolution
     image = _resize_image(image, size)
+    
+    # Grey :
+    #  * MANGA: if the image is mostly grey, we can apply a grey palette
+    #  * COMICS/WEBTOONS: but if it was with colors, then the pillow got a better result (but FAR bigger, so not ok for manga)
     # Adapt to EReader palette
-    image = _quantize_image(image, palette)
+    if _is_image_grey(image):
+        image = _apply_grey_palette(image, palette)  # palette are ok for manga black and white, and very small
+    else:
+        image = _apply_basic_grey(image)  # pillow is better for colors, but is very FAT
     
     return [image]  # only one image if not webtoon

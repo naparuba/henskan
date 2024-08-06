@@ -8,10 +8,11 @@ import cv2
 # HACK weasyprint.HTML because it's imported by doctr but useless in our case, & buggy to install!
 import sys
 
-from PIL import ImageStat, ImageEnhance, Image, ImageDraw, ImageFont
+from PIL import ImageStat, ImageEnhance, Image, ImageDraw, ImageFont, ImageChops
 
-from mangle.archive_pdf import ArchivePDF
-from mangle.image import convert_image, save_image
+from henskan.archive_pdf import ArchivePDF
+from henskan.image import convert_image, save_image, _apply_grey_palette, _apply_basic_grey, Palette15b, Palette16
+from henskan.parameters import parameters
 
 vendors_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vendors')
 if not os.path.exists(vendors_dir):
@@ -92,16 +93,21 @@ class COLORS(Enum):
 class PIXEL_CATEGORY(Enum):
     WHITE = 1
     BLACK = 2
-    OTHER = 3
+    GREY = 3
+    OTHER = 4
 
 
-def _detect_pixel_category(pixel, white_threshold, black_threshold):
-    # type: (tuple[int, int, int], int, int) -> PIXEL_CATEGORY
-    if pixel[0] > 255 - white_threshold and pixel[1] > 255 - white_threshold and pixel[2] > 255 - white_threshold:
+def _detect_pixel_category(pixel, white_threshold, black_threshold, verbose=False):
+    # type: (tuple[int, int, int], int, int, bool) -> PIXEL_CATEGORY
+    if pixel[0] >= 255 - white_threshold and pixel[1] >= 255 - white_threshold and pixel[2] >= 255 - white_threshold:
         return PIXEL_CATEGORY.WHITE
-    elif pixel[0] < black_threshold and pixel[1] < black_threshold and pixel[2] < black_threshold:
+    elif pixel[0] <= black_threshold and pixel[1] <= black_threshold and pixel[2] <= black_threshold:
         return PIXEL_CATEGORY.BLACK
+    elif abs(pixel[0] - pixel[1]) < 10 and abs(pixel[0] - pixel[2]) < 10:  # a diff in 5 (on 255) is ok for "quite the same"
+        return PIXEL_CATEGORY.GREY
     else:
+        # if verbose:
+        #    print(f'OTHER pixel: {pixel} ')
         return PIXEL_CATEGORY.OTHER
 
 
@@ -145,14 +151,87 @@ def _save_image(index, image, suffix):
 
 
 def _classic_transform(image_path, dest_path, recursive_call=False):
+    # type: (str, str, bool) -> None
     converted_images = convert_image(image_path)
     _do_save_image_with_bloc(converted_images[0], dest_path, recursive_call=recursive_call)
+
+
+def _into_palette_15(img, dest_path, recursive_call=False):
+    # type: (Image, str, bool) -> None
+    
+    palette = Palette15b
+    img = _apply_grey_palette(img, palette)
+    _do_save_image_with_bloc(img, dest_path, recursive_call=recursive_call)
+
+
+def _into_palette_16(img, dest_path, recursive_call=False):
+    # type: (Image, str, bool) -> None
+    
+    palette = Palette16
+    img = _apply_grey_palette(img, palette)
+    _do_save_image_with_bloc(img, dest_path, recursive_call=recursive_call)
+
+
+
+
+def _into_classic_grey(image, dest_path, recursive_call=False):
+    # type: (Image, str, bool) -> None
+    img = _apply_basic_grey(image)
+    _do_save_image_with_bloc(img, dest_path, recursive_call=recursive_call)
 
 
 def _get_variance(image):
     # type: (Image) -> float
     stat = ImageStat.Stat(image)
     return (stat.var[0] + stat.var[1] + stat.var[2]) / 3.0
+
+
+def _is_globally_grey__slow(i, image):
+    # type: (int, Image) -> bool
+    pixels = image.getdata()
+    
+    nb_pixels = len(pixels)
+    nb_pixels_in_colors_over_threshold = nb_pixels * 0.1  # if more than 10% of pixels are in colors, then it's not grey and we can stop the loop
+    nb_pixels_in_colors = 0
+    cats = {}
+    for pixel in pixels:
+        cat = _detect_pixel_category(pixel, 0, 0, verbose=True)
+        if cat not in cats:
+            cats[cat] = 0
+        cats[cat] += 1
+        if cat == PIXEL_CATEGORY.OTHER:
+            nb_pixels_in_colors += 1
+            if nb_pixels_in_colors > nb_pixels_in_colors_over_threshold:
+                print(f' {i} too many pixels in colors, over 10%: {nb_pixels_in_colors} / {nb_pixels}')
+                return False
+    print(f' {i} cats: {cats}')
+    total_pixels = cats.get(PIXEL_CATEGORY.WHITE, 0) + cats.get(PIXEL_CATEGORY.BLACK, 0) + cats.get(PIXEL_CATEGORY.GREY, 0) + cats.get(
+            PIXEL_CATEGORY.OTHER, 0)
+    nb_others = cats.get(PIXEL_CATEGORY.OTHER, 0)
+    pct_colors = nb_others / total_pixels * 100
+    print(f' {i} pct_colors: {pct_colors:.2f}%')
+    is_grey = pct_colors < 10  # if less than 10% of colors, then it's mostly grey
+    return is_grey
+
+
+# Check if image is monochrome (1 channel or 3 identical channels)
+def is_totally_greyscale__fast(i, image):
+    # type: (int, Image) -> bool
+    if image.mode not in ("L", "RGB"):
+        # Unsupported image mode
+        return False
+    
+    if image.mode == "RGB":
+        rgb = image.split()
+        extrema = ImageChops.difference(rgb[0], rgb[1]).getextrema()[1]
+        print(f' {i} extrema 1?  {extrema}')
+        if extrema >= 15:
+            return False
+        extrema = ImageChops.difference(rgb[0], rgb[2]).getextrema()[1]
+        print(f' {i} extrema 2?  {extrema}')
+        if extrema >= 15:
+            return False
+    return True
 
 
 def _simple_threshold(i, image):
@@ -258,7 +337,8 @@ def _image_sharpness(image):
 
 archive = ArchivePDF('test_out/out', 'test_title', 'Kobo Elipsa 2E')
 
-for i in range(1, 13):
+for i in range(1, 27):
+    print(f'\n\n')
     start = time.time()
     in_path = f"test_in/img{i}.jpg"
     image = Image.open(in_path)
@@ -268,10 +348,33 @@ for i in range(1, 13):
     original_image = _image_original(image)
     print(f'{i}  {time.time() - start:.2f} ORIGINAL Image {i} {image.size}')
     
+    # Grey detection
+    before = time.time()
+    is_grey = is_totally_greyscale__fast(i, image)  # if True, then we can trust it's grey
+    print(f'{i}  {time.time() - before:.2f} GREYSCALE Image FAST => is_grey: {is_grey}')
+    
+    if not is_grey:  # maybe it's a grey with a little bit of colors, so must check for real colors presence
+        before_slow = time.time()
+        is_grey = _is_globally_grey__slow(i, image)
+        print(f'{i}  {time.time() - before_slow:.2f} SLOW DETECT COLORS => is_grey: {is_grey}')
+        if is_grey:
+            print(f'{i}  *********** WAS IN FACT GREY ***********')
+    
+    print(f'{i}  {time.time() - start:.2f} GREYSCALE Image {is_grey=}')
+    
     _classic_transform(in_path, f"test_out/img{i}_classic.png")
     
+    _into_palette_15(image, f"test_out/img{i}_palette_15.png")
+    
+    _into_palette_16(image, f"test_out/img{i}_palette_16.png")
+    
+    _into_classic_grey(image, f"test_out/img{i}_classic_grey.png")
+    
     # IA detection:
-    _detect_text_positions(in_path, f"test_out/img{i}_ia.jpg")
+    try:
+        _detect_text_positions(in_path, f"test_out/img{i}_ia.jpg")
+    except ValueError:
+        print(f'Error in IA detection for {in_path}')
     
     # Enhance color
     color_image = _image_enhance_color(image)
