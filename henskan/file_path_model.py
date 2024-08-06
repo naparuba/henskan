@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
 
 from PyQt6.QtCore import QAbstractListModel, QModelIndex, Qt, QVariant
 
@@ -30,13 +31,32 @@ class FilePathModel(QAbstractListModel):
         self._items = []
     
     
+    def __get_common_part_with_previous(self, current, previous):
+        print(f'GET COMMON PART {current} {previous}')
+        prefix = os.path.commonpath([previous, current])
+        print(f'PREFIX {prefix} {previous} {current}')
+        return prefix
+    
+    
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return QVariant()
+        print(f'PRINT INDEX {index.row()}')
+        current_idx = index.row()
+        item = self._items[current_idx]
         
-        item = self._items[index.row()]
         if role == FilePathModel.FullPathRole:
-            return item["full_path"]
+            current_path = item["full_path"]
+            current_path.replace('/', '\\')  # go unix mode
+            if current_idx == 0:
+                return current_path
+            previous_path = self._items[current_idx - 1]["full_path"]
+            common_prefix = self.__get_common_part_with_previous(current_path, previous_path).replace('\\', '/')
+            # replace common_prefix by spaces
+            new_value = current_path.replace(common_prefix, " " * len(common_prefix), 1)
+            print(f'{current_path} ({common_prefix}) => {new_value}')
+            return new_value
+            #return item["full_path"]
         elif role == FilePathModel.SizeRole:
             return item["size"]
         
