@@ -144,8 +144,10 @@ ApplicationWindow {
                 //textFormat: Text.MarkdownText
                 font.family: "DejaVu Sans Mono"  // monospace ,Courier
                 color: "white"
-                // NOTE: the " " is an hack to avoid to be in the green border on the let=ft
-                text:  full_path.length > 80 ? " " + "..." + full_path.slice(-80) : " " + full_path   // Limit size because dialog is not so big
+                // NOTE: the " " is a hack to avoid to be in the green border on the left
+                text: {
+                    return full_path
+                }
             }
         }
     }

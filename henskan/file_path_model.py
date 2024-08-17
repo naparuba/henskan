@@ -32,9 +32,8 @@ class FilePathModel(QAbstractListModel):
     
     
     def __get_common_part_with_previous(self, current, previous):
-        print(f'GET COMMON PART {current} {previous}')
         prefix = os.path.commonpath([previous, current])
-        print(f'PREFIX {prefix} {previous} {current}')
+        print(f'\nPREFIX: {prefix=}\n{previous=}\n{current=}')
         return prefix
     
     
@@ -47,14 +46,19 @@ class FilePathModel(QAbstractListModel):
         
         if role == FilePathModel.FullPathRole:
             current_path = item["full_path"]
-            current_path.replace('/', '\\')  # go unix mode
+            current_path = current_path.replace('\\', '/')  # go unix mode
             if current_idx == 0:
+                if len(current_path) > 60:
+                    current_path = "..." + current_path[-60:]
                 return current_path
             previous_path = self._items[current_idx - 1]["full_path"]
             common_prefix = self.__get_common_part_with_previous(current_path, previous_path).replace('\\', '/')
             # replace common_prefix by spaces
             new_value = current_path.replace(common_prefix, " " * len(common_prefix), 1)
-            print(f'{current_path} ({common_prefix}) => {new_value}')
+            print(f'REPLACE{current_path=} ({common_prefix=}) => {new_value=} ({len(new_value)=})')
+            if len(new_value) > 60:
+                new_value = "..." + new_value[-60:]
+            print(f'FINAL {current_path=} ({common_prefix=}) => {new_value=}')
             return new_value
             #return item["full_path"]
         elif role == FilePathModel.SizeRole:
