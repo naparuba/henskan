@@ -6,5 +6,5 @@ ImageHash==4.3.1
 
 ## IA part
 #matplotlib==3.9.1  # only for manual debugging
-opencv-python==4.10.0.84
-python-doctr[torch]==0.8.1
+#opencv-python==4.10.0.84
+#python-doctr[torch]==0.8.1

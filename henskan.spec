@@ -10,10 +10,13 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=["scipy", "matplotlib", "torch", "torchvision"],
     noarchive=True,
     optimize=0,
 )
+#exclude = ["scipy", "matplotlib", "matplotlib", "torch", "torchvision"]
+#a.binaries = [x for x in a.binaries if not x[0].startswith(tuple(exclude))]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
