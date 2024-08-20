@@ -145,15 +145,22 @@ class UIController(QObject):
                 continue
             paths.append(file_path)
         
+        # For chapters, we cannot use the given directory if there is only one directory
+        is_only_main_title_dir = len(paths) == 1
+        
         paths.sort()
         print(f'Loading Paths: {paths}')
         for file_path in paths:
             chapter_name = os.path.basename(file_path)
-            parameters.add_chapter(chapter_name)
+            if not is_only_main_title_dir:  # real chapter/tome name
+                parameters.add_chapter(chapter_name)
             if self.__is_image_file(file_path):
                 self._file_path_model.add_file_path(file_path, chapter_name, 0.33)
             elif os.path.isdir(file_path):
-                self.__add_directory(file_path, chapter_name)
+                if is_only_main_title_dir:
+                    self.__add_main_directory(file_path)
+                else: # real chapter/tome name
+                    self.__add_directory(file_path, chapter_name)
         
         if len(parameters.get_images()):
             self.__enable_other_cols()
@@ -286,9 +293,31 @@ class UIController(QObject):
         # can be the default ~ or the last one saved
         self._set_output_directory(parameters.get_output_directory())
     
+    def __add_main_directory(self, directory):
+        # type: (str) -> None
+        
+        main_chapter = os.path.basename(directory)
+        was_main_chapter_added = False
+        
+        file_names = os.listdir(directory)
+        for filename in file_names:
+            file_path = os.path.join(directory, filename)
+            if self.__is_image_file(file_path):
+                if not was_main_chapter_added:  # don't add chapters more than once!
+                    parameters.add_chapter(main_chapter)
+                    was_main_chapter_added = True
+                print(f'UIController::__add_main_directory:: found an IMAGE {filename=} so in main chapter {main_chapter=}')
+                self._file_path_model.add_file_path(file_path, main_chapter, 0.33)
+            elif os.path.isdir(file_path):
+                chapter_name = filename  # this is a direct sub-dir, so use it as chapter name
+                print(f'UIController::__add_main_directory:: found a CHAPTER {chapter_name=}')
+                self.__add_directory(file_path, chapter_name)
+    
     
     def __add_directory(self, directory, chapter_name):
-        print('UIController::__add_directory')
+        # type: (str, str) -> None
+        print(f'UIController::__add_directory {directory=} {chapter_name=}')
+        
         for root, _, subfiles in os.walk(directory):
             for filename in subfiles:
                 file_path = os.path.join(root, filename)
