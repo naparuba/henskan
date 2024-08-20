@@ -20,8 +20,10 @@ import os.path
 import time
 from zipfile import ZipFile, ZIP_STORED
 
+from henskan.archive import Archive
 
-class ArchiveCBZ(object):
+
+class ArchiveCBZ(Archive):
     def __init__(self, path):
         # type: (str) -> None
         output_directory = os.path.dirname(path)
@@ -36,6 +38,10 @@ class ArchiveCBZ(object):
         arcname = os.path.basename(filename)
         self._zipfile.write(filename, arcname)
     
+    # Not managed for CBZ
+    def add_chapter(self, title):
+        # type: (str) -> None
+        pass
     
     def close(self):
         t0 = time.time()

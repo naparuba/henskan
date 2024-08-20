@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
+import time
 
 from PyQt6.QtCore import QAbstractListModel, QModelIndex, Qt, QVariant
 
@@ -33,14 +34,12 @@ class FilePathModel(QAbstractListModel):
     
     def __get_common_part_with_previous(self, current, previous):
         prefix = os.path.commonpath([previous, current])
-        print(f'\nPREFIX: {prefix=}\n{previous=}\n{current=}')
         return prefix
     
     
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return QVariant()
-        print(f'PRINT INDEX {index.row()}')
         current_idx = index.row()
         item = self._items[current_idx]
         
@@ -55,12 +54,10 @@ class FilePathModel(QAbstractListModel):
             common_prefix = self.__get_common_part_with_previous(current_path, previous_path).replace('\\', '/')
             # replace common_prefix by spaces
             new_value = current_path.replace(common_prefix, " " * len(common_prefix), 1)
-            print(f'REPLACE{current_path=} ({common_prefix=}) => {new_value=} ({len(new_value)=})')
             if len(new_value) > 60:
                 new_value = "..." + new_value[-60:]
-            print(f'FINAL {current_path=} ({common_prefix=}) => {new_value=}')
             return new_value
-            #return item["full_path"]
+            # return item["full_path"]
         elif role == FilePathModel.SizeRole:
             return item["size"]
         
@@ -78,9 +75,16 @@ class FilePathModel(QAbstractListModel):
         }
     
     
-    def add_file_path(self, full_path, size):
+    def add_file_path(self, full_path, chapter_name, size):
+        # type: (str, str, int) -> None
         self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
         self._items.append({"full_path": full_path, "size": size})
+        parameters.add_image(full_path, chapter_name)
+        self.endInsertRows()
+    
+    
+    # When we did finish to add files, then we can sort and display them
+    def finish_add_files(self):
+        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
         self._items.sort(key=lambda item: item["full_path"])
-        parameters.add_image(full_path)
         self.endInsertRows()

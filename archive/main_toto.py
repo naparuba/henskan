@@ -48,7 +48,7 @@ class Backend(QObject):
     @pyqtSlot()
     def add_file_path(self):
         for i in range(1000):
-            self._fruit_model.add_file_path("c:\\mangle\\toto.py", 4.00)
+            self._fruit_model._add_file_path("c:\\mangle\\toto.py", 4.00)
 
 
 if __name__ == "__main__":

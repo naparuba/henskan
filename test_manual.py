@@ -4,16 +4,19 @@ import shutil
 from PIL import ImageDraw
 from PIL import ImageFont
 
-from mangle.archive_cbz import ArchiveCBZ
-from mangle.archive_pdf import ArchivePDF
-from mangle.image import EReaderData, convert_image, save_image
-from mangle.parameters import parameters
 
-img_src = './test_in/1.jpg'
+from henskan.archive_pdf import ArchivePDF
+from henskan.image import EReaderData, convert_image, save_image
+from henskan.parameters import parameters
+
+img_src = './test_in/img1.jpg'
+
+chapter_name = 'test_title'
 
 parameters.set_output_directory('./test_out')
 parameters.set_title('test_title')
-parameters.add_image(img_src)
+parameters.add_chapter(chapter_name)
+parameters.add_image(img_src, chapter_name)
 parameters.set_device('Kobo Elipsa 2E', 13)
 
 directory = parameters.get_output_directory()
@@ -53,34 +56,42 @@ def _add_image_block_text(image, text):
 # Source image
 target = os.path.join(book_path, '00000.jpg')
 shutil.copy(img_src, target)
+archive.add_chapter('Source Image')
 archive.add(target)
+
+
 
 # 1: All
 target = _get_target(1)
-converted_images = convert_image(img_src, launch_autocrop=True, launch_resize=True, launch_quantize=True)
+converted_images = convert_image(img_src)
 img = _add_image_block_text(converted_images[0], 'All')
 save_image(img, target)
+archive.add_chapter('All')
 archive.add(target)
+
 
 # 2: just autocrop
 target = _get_target(2)
-converted_images = convert_image(img_src, launch_autocrop=True, launch_resize=False, launch_quantize=False)
+converted_images = convert_image(img_src)
 img = _add_image_block_text(converted_images[0], 'just autocrop')
 save_image(img, target)
+archive.add_chapter('Autocrop')
 archive.add(target)
 
 # 3: autocrop and resize
 target = _get_target(3)
-converted_images = convert_image(img_src, launch_autocrop=True, launch_resize=True, launch_quantize=False)
+converted_images = convert_image(img_src)
 img = _add_image_block_text(converted_images[0], 'autocrop and resize')
 save_image(img, target)
+archive.add_chapter('Autocrop and Resize')
 archive.add(target)
 
 # 4: autocrop and quantize
 target = _get_target(4)
-converted_images = convert_image(img_src, launch_autocrop=True, launch_resize=False, launch_quantize=True)
+converted_images = convert_image(img_src)
 img = _add_image_block_text(converted_images[0], 'autocrop and quantize')
 save_image(img, target)
+archive.add_chapter('Autocrop and Quantize')
 archive.add(target)
 
 archive.close()

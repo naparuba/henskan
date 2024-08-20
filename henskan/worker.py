@@ -90,11 +90,11 @@ class Worker(QObject):
         print(f" * Convert & save in {time.time() - begin:.3f}s for {target}")
     
     
-    def _tick(self):
+    def _tick(self, image_path):
         index = self._index_value
         pages_split = self._split_page_offset
         target = os.path.join(self._book_path, '%05d.png' % (index + pages_split))
-        source = parameters._images[index]
+        source = image_path #parameters._images[index]
         
         if index == 0:
             try:
@@ -173,25 +173,32 @@ class Worker(QObject):
         # sort images before processing
         parameters.sort_images()
         
+        print(f'Chapter & images: {parameters._images_by_chapter}')
+        
         nb_images = len(parameters.get_images())
+        images_by_chapter = parameters.get_images_by_chapter()
         start = time.time()
         # Now work!
-        for i in range(nb_images):
-            self._tick()
-            pct_float = float(i) / len(parameters.get_images())
-            pct = min(100, int(pct_float * 100))
-            self.updateProgress.emit(pct)
-            elapsed = time.time() - start
-            if i >= 5:
-                estimated_time = elapsed / pct_float
-                print(f'Estimated time: {estimated_time} = {elapsed} / {pct_float}')
-                remaining_time_float = max(0.0, estimated_time - elapsed)
-                estimated_time_str = f'Estimated time: {self._display_sec_into_humain(remaining_time_float)}'
-            else:
-                estimated_time_str = ''
-            
-            self.set_progress_text(f'Processing {i + 1}/{nb_images}<br/>{estimated_time_str}')
-            QThread.msleep(1)
+        i = 0
+        for chapter, images_in_chapter in images_by_chapter.items():
+            self._archive.add_chapter(chapter)  # let the archive know we have a new chapter/tome
+            for image_path in images_in_chapter:
+                i += 1
+                self._tick(image_path)
+                pct_float = float(i) / len(parameters.get_images())
+                pct = min(100, int(pct_float * 100))
+                self.updateProgress.emit(pct)
+                elapsed = time.time() - start
+                if i >= 5:
+                    estimated_time = elapsed / pct_float
+                    print(f'Estimated time: {estimated_time} = {elapsed} / {pct_float}')
+                    remaining_time_float = max(0.0, estimated_time - elapsed)
+                    estimated_time_str = f'Estimated time: {self._display_sec_into_humain(remaining_time_float)}'
+                else:
+                    estimated_time_str = ''
+                
+                self.set_progress_text(f'Processing {i + 1}/{nb_images}<br/>{estimated_time_str}')
+                QThread.msleep(1)
         print(f'Worker::run::Finished processing images')
         
         # Close the CBZ/PDF

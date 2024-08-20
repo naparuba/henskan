@@ -18,13 +18,15 @@
 
 import os.path
 import time
+from uuid import uuid4
 
 from reportlab.pdfgen import canvas
 
+from .archive import Archive
 from .image import EReaderData
 
 
-class ArchivePDF(object):
+class ArchivePDF(Archive):
     def __init__(self, path, title, device):
         # type: (str, str, str) -> None
         output_directory = os.path.dirname(path)
@@ -35,9 +37,9 @@ class ArchivePDF(object):
         self._page_size = EReaderData.Profiles[device][0]
         # pagesize could be letter or A4 for standardization, but we need to control some image sizes
         self._canvas = canvas.Canvas(self._output_path, pagesize=self._page_size)
-        self._canvas.setAuthor("Poutoux")
+        self._canvas.setAuthor("Henskan")
         self._canvas.setTitle(title)
-        self._canvas.setSubject("Created for " + device)
+        self._canvas.setSubject("Created by Henskan for " + device)
         
         print(f'[PDF] file: {self._output_path} open for writing')
     
@@ -46,6 +48,15 @@ class ArchivePDF(object):
         # type: (str) -> None
         self._canvas.drawImage(filename, 0, 0, width=self._page_size[0], height=self._page_size[1], preserveAspectRatio=True, anchor='c')
         self._canvas.showPage()  # close page
+    
+    
+    # create a chapter in the reportlab pdf, so it can be added to the table of contents
+    # NOTE: key in pdf must be unique, so using a uuid4, duplicated title are not a problem
+    def add_chapter(self, title):
+        # type: (str) -> None
+        key = uuid4().hex  # so it's unique
+        self._canvas.bookmarkPage(key)
+        self._canvas.addOutlineEntry(title, key, 0, 0)
     
     
     def close(self):

@@ -16,6 +16,7 @@
 
 import json
 import os
+import time
 from pathlib import Path
 
 from .util import natural_key
@@ -24,6 +25,10 @@ from .util import natural_key
 class Parameters(object):
     DefaultDevice = 'Kobo Libra H2O'
     DefaultTitle = 'Untitled'
+    
+    _chapters: list[str]
+    
+    _images_by_chapter: dict[str, list[str]]
     
     _images: list[str]
     
@@ -46,6 +51,8 @@ class Parameters(object):
     
     def clean(self):
         self._images = []
+        self._chapters = []
+        self._images_by_chapter = {}
         
         self._title = self.DefaultTitle
         self._device = self.DefaultDevice
@@ -165,19 +172,40 @@ class Parameters(object):
         self._split_right_then_left = b
     
     
-    def add_image(self, image_path):
+    def add_image(self, image_path, chapter_name):
+        # type: (str, str) -> None
+        t0 = time.time()
         self._images.append(image_path)
-        print(f'Parameters:: Added image: {image_path} (current size: {len(self._images)})')
+        if chapter_name not in self._images_by_chapter:
+            self._images_by_chapter[chapter_name] = []
+        self._images_by_chapter[chapter_name].append(image_path)
+        print(f'[{time.time() - t0:.3f}s] Parameters:: Added image: {image_path} (current size: {len(self._images)})')
     
+    
+    def add_chapter(self, chapter):
+        # type: (str) -> None
+        self._chapters.append(chapter)
+        print(f'Parameters:: Added chapter: {chapter} (current size: {len(self._chapters)})')
     
     def get_images(self):
+        # type: () -> list[str]
         return self._images
+
+    def get_images_by_chapter(self):
+        # type: () -> dict[str, list[str]]
+        return self._images_by_chapter
 
     # Sort images by natural key (so that 2.jpg comes before 10.jpg), after remove duplicates
     def sort_images(self):
+        # type: () -> None
         
         sorted_images = sorted(set(self._images), key=natural_key)
         self._images = sorted_images
         print(f'Parameters:: Sorted images: {self._images}')
+        
+        # also sort in the chapters
+        for chapter in self._chapters:
+            self._images_by_chapter[chapter] = sorted(set(self._images_by_chapter[chapter]), key=natural_key)
+            print(f'Parameters:: Sorted images for chapter {chapter}: {self._images_by_chapter[chapter]}')
 
 parameters = Parameters()

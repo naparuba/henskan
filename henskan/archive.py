@@ -32,5 +32,10 @@ class Archive(ABC):
     
     
     @abstractmethod
+    def add_chapter(self, title):
+        pass
+    
+    
+    @abstractmethod
     def close(self):
         pass

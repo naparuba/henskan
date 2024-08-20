@@ -18,6 +18,7 @@
 import os
 import random
 import re
+import time
 from typing import LiteralString
 
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
@@ -78,11 +79,6 @@ class UIController(QObject):
         self._set_device(parameters.get_device(), parameters.get_device_index())
     
     
-    @pyqtSlot()
-    def add_file_path(self, file_path, size):
-        self._file_path_model.add_file_path(file_path, size)
-    
-    
     def _find_child(self, obj, look_name):
         if obj.objectName() == look_name:
             return obj
@@ -123,8 +119,8 @@ class UIController(QObject):
     def __is_image_file(self, filename):
         # type: (LiteralString | str | bytes) -> bool
         image_exts = ('.jpeg', '.jpg', '.gif', '.png', '.webp')
-        
-        return os.path.isfile(filename) and self.__get_file_extension(filename) in image_exts
+        file_extension = self.__get_file_extension(filename)
+        return file_extension in image_exts
     
     
     def start_converting(self):
@@ -137,26 +133,39 @@ class UIController(QObject):
     
     @pyqtSlot(str)
     def on_files_dropped(self, file_url_str):
+        start = time.time()
         print(f"File dropped: ZZ{file_url_str}ZZ  {type(file_url_str)}")
         
+        paths = []
         file_paths = file_url_str.split("\n")
         for file_path in file_paths:
             file_path = file_path.strip().replace("file:///", "", 1)
             print(f'onFilesDropped::File path: {file_path}')
             if not file_path:
                 continue
+            paths.append(file_path)
+        
+        paths.sort()
+        print(f'Loading Paths: {paths}')
+        for file_path in paths:
+            chapter_name = os.path.basename(file_path)
+            parameters.add_chapter(chapter_name)
             if self.__is_image_file(file_path):
-                self.add_file_path(file_path, 0.33)
+                self._file_path_model.add_file_path(file_path, chapter_name, 0.33)
             elif os.path.isdir(file_path):
-                self.__add_directory(file_path)
+                self.__add_directory(file_path, chapter_name)
         
         if len(parameters.get_images()):
             self.__enable_other_cols()
         
         self._drop_done()
+        print(f'End of onFilesDropped in {time.time() - start:.3f}s')
     
     
     def _drop_done(self):
+        # Let the UI know we have all the images so it can sort it and update display
+        self._file_path_model.finish_add_files()
+        
         if not self._first_drop_done:
             self._guess_parameters()
             self._first_drop_done = True
@@ -278,12 +287,13 @@ class UIController(QObject):
         self._set_output_directory(parameters.get_output_directory())
     
     
-    def __add_directory(self, directory):
+    def __add_directory(self, directory, chapter_name):
+        print('UIController::__add_directory')
         for root, _, subfiles in os.walk(directory):
             for filename in subfiles:
                 file_path = os.path.join(root, filename)
                 if self.__is_image_file(file_path):
-                    self.add_file_path(file_path, 0.33)
+                    self._file_path_model.add_file_path(file_path, chapter_name, 0.33)
     
     
     @pyqtSlot()
