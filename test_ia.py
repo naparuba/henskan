@@ -110,6 +110,57 @@ def _detect_pixel_category(pixel, white_threshold, black_threshold, verbose=Fals
         #    print(f'OTHER pixel: {pixel} ')
         return PIXEL_CATEGORY.OTHER
 
+SOLID_COLORS = []
+
+def _load_solid_colors_from_csv():
+    with open('./test_in/solid_colors.csv', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rgb = tuple(line.split(',')[1].split('-'))
+            print(f'RGB {rgb}')
+            SOLID_COLORS.append((int(rgb[0]), int(rgb[1]), int(rgb[2])))
+
+#_load_solid_colors_from_csv()
+
+def _load_solid_colors_from_gen():
+    N = 3  # => 64 colors
+    for i in range(N+1):
+        r = int(255 / N  * i)
+        for j in range(N+1):
+            g = int(255 / N  * j)
+            for k in range(N+1):
+                b = int(255 /N * k)
+                print(f'RGB {r} {g} {b}')
+                SOLID_COLORS.append((r, g, b))
+
+_load_solid_colors_from_gen()
+print(f'Len SOLID_COLORS: {len(SOLID_COLORS)}')
+
+from functools import lru_cache
+
+@lru_cache(maxsize=65535)
+def _change_by_nearest_solid_color(pixel):
+    min_dist = 99999999
+    nearest_color = None
+    for rgb in SOLID_COLORS:
+        r_ref = rgb[0]
+        g_ref = rgb[1]
+        b_ref = rgb[2]
+        r_pixel = pixel[0]
+        g_pixel = pixel[1]
+        b_pixel = pixel[2]
+        
+        # Must take a color "higher" than the pixel color
+        if r_pixel > r_ref or g_pixel > g_ref or b_pixel > b_ref:
+            continue
+        
+        color_dist = (r_ref - r_pixel) ** 2 + (g_ref - g_pixel) ** 2 + (b_ref - b_pixel) ** 2
+        if color_dist < min_dist:
+            min_dist = color_dist
+            nearest_color = rgb
+    return nearest_color
 
 def _add_image_block_text(image, text, alternative_position):
     # Create a drawing context
@@ -235,28 +286,53 @@ def is_totally_greyscale__fast(i, image):
 
 
 def _simple_threshold(i, image):
-    for k in range(1, 5):
-        img = image.copy()
-        d = img.getdata()
+    for k in range(0, 5):
+        img_mask = image.copy()
+        img_colored = image.copy()
+        d = img_mask.getdata()
         
         white_threshold = 5 + k * 25
         black_threshold = 100 + k * 25
-        new_pixels = []
+        new_pixels_mask = []
+        new_pixels_colored = []
         for pixel in d:
             pixel_category = _detect_pixel_category(pixel, white_threshold, black_threshold)
             if pixel_category == PIXEL_CATEGORY.WHITE:
-                new_pixels.append(COLORS.WHITE.value)
+                new_pixels_mask.append(COLORS.WHITE.value)
+                new_pixels_colored.append(COLORS.WHITE.value)
             elif pixel_category == PIXEL_CATEGORY.BLACK:
-                new_pixels.append(COLORS.BLACK.value)
+                new_pixels_mask.append(COLORS.BLACK.value)
+                new_pixels_colored.append(pixel)  # on black part, keep the original color, the detection is a mask
             else:
-                new_pixels.append(COLORS.WHITE.value)
+                new_pixels_mask.append(COLORS.WHITE.value)
+                new_pixels_colored.append(COLORS.WHITE.value)
         
         # update image data
-        img.putdata(new_pixels)
-        
+        img_mask.putdata(new_pixels_mask)
         # save new image
-        _save_image(i, img, f'simple_threshold_{k}')
+        _save_image(i, img_mask, f'simple_threshold_{k}')
+        
+        # colored version
+        img_colored.putdata(new_pixels_colored)
+        _save_image(i, img_colored, f'simple_threshold_{k}_colored')
     return image
+
+
+def _image_to_nearest_color(i, image):
+    img = image.copy()
+    pixels = list(img.getdata())
+    
+    new_pixels = []
+    for pixel in pixels:
+        new_pixel = _change_by_nearest_solid_color(pixel)
+        new_pixels.append(new_pixel)
+    
+    # update image data
+    img.putdata(new_pixels)
+    
+    # save new image
+    _save_image(i, img, f'nearest_color')
+    return img
 
 
 def _image_original(image):
@@ -345,8 +421,9 @@ for i in range(1, 27):
     image = image.convert('RGB')
     
     # original
+    before = time.time()
     original_image = _image_original(image)
-    print(f'{i}  {time.time() - start:.2f} ORIGINAL Image {i} {image.size}')
+    print(f'{i}  {time.time() - before:.2f} ORIGINAL Image {i} {image.size}')
     
     # Grey detection
     before = time.time()
@@ -360,7 +437,7 @@ for i in range(1, 27):
         if is_grey:
             print(f'{i}  *********** WAS IN FACT GREY ***********')
     
-    print(f'{i}  {time.time() - start:.2f} GREYSCALE Image {is_grey=}')
+    print(f'{i}  {time.time() - before:.2f} GREYSCALE Image {is_grey=}')
     
     _classic_transform(in_path, f"test_out/img{i}_classic.png")
     
@@ -377,12 +454,14 @@ for i in range(1, 27):
         print(f'Error in IA detection for {in_path}')
     
     # Enhance color
+    before = time.time()
     color_image = _image_enhance_color(image)
-    print(f'{i}  {time.time() - start:.2f} COLOR Image {i} {image.size}')
+    print(f'{i}  {time.time() - before:.2f} COLOR Image {i} {image.size}')
     
     # Contrast
+    before = time.time()
     contrast_image = _image_contrast(image)
-    print(f'{i}  {time.time() - start:.2f} CONTRAST Image {i} {image.size}')
+    print(f'{i}  {time.time() - before:.2f} CONTRAST Image {i} {image.size}')
     
     # Brightness => all sucks
     # brightness_image = _image_brightness(image)
@@ -390,11 +469,18 @@ for i in range(1, 27):
     # print(f'{i}  {time.time() - start:.2f} BRIGHTNESS  {image.size}')
     
     # Sharpness
+    before = time.time()
     sharpness_image = _image_sharpness(image)
-    print(f'{i}  {time.time() - start:.2f} SHARPNESS Image {i} {image.size}')
+    print(f'{i}  {time.time() - before:.2f} SHARPNESS Image {i} {image.size}')
     
     # Threshold
+    before = time.time()
     threshold_image = _simple_threshold(i, image)
-    print(f'{i}  {time.time() - start:.2f} THRESOLD Image {i} {image.size}')
+    print(f'{i}  {time.time() - before:.2f} THRESOLD Image {i} {image.size}')
+
+    # Nearest color
+    before = time.time()
+    nearest_color_image = _image_to_nearest_color(i, image)
+    print(f'{i}  {time.time() - before:.2f} NEAREST COLOR Image {i} {image.size}')
 
 archive.close()
