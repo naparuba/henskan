@@ -195,6 +195,10 @@ class Parameters(object):
         # type: () -> dict[str, list[str]]
         return self._images_by_chapter
 
+    def get_chapters(self):
+        # type: () -> list[str]
+        return self._chapters
+
     # Sort images by natural key (so that 2.jpg comes before 10.jpg), after remove duplicates
     def sort_images(self):
         # type: () -> None

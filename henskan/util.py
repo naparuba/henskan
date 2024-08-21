@@ -37,3 +37,84 @@ def get_ui_path(relative):
     # type: (str) -> str
     my_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(my_dir, relative)
+
+def _find_base_dir_without_tome_number(directory_name):
+    # type: (str) -> str
+    print(f'\n{directory_name=}')
+    lookup_patterns = [r'\sT\d+.*',  # ELDEN RING – T02
+                       r'\sTome\s*\d+.*',  # ELDEN RING – Tome 2
+                       r'\s*\d+$',  # ELDEN RING – Le chemin vers l’Arbre-Monde - 1
+                       r'\s*\d+.*',  # Hellboy (Delcourt) - 01 - Les germes de la destruction
+                       ]
+
+    # Extract the base title by removing volume/chapter , and remove ALL that is AFTER T03 or Tome03
+    for lookup_pattern in lookup_patterns:
+        print('lookup_pattern:', lookup_pattern)
+        dir_base_title = re.sub(lookup_pattern, '', directory_name, flags=re.IGNORECASE).strip()
+        if dir_base_title == directory_name:
+            print(f'lookup_pattern: {lookup_pattern=} not found, still {dir_base_title=}')
+            continue  # not found
+        return dir_base_title
+
+    return ''
+    
+    
+
+
+def find_compact_title(directory_names):
+    # type: (list[str]) -> str
+    
+    directory_names = list(set(directory_names))
+    
+    if not directory_names:
+        return ''
+    
+    if len(directory_names) == 1:
+        return directory_names[0]
+    
+    # Clean up directory names, remove all () or [] content
+    directory_names = [re.sub(r'\[.*?\]', '', re.sub(r'\(.*?\)', '', directory_name)).strip() for directory_name in directory_names]
+    
+    # Clean up directory by removing all . and _ characters, and replace them by space
+    directory_names = [re.sub(r'\.', ' ', re.sub(r'_', ' ', directory_name)).strip() for directory_name in directory_names]
+    
+    # Clean up directory by removing all - characters, and replace them by space
+    directory_names = [re.sub(r'-', '', directory_name).strip() for directory_name in directory_names]
+    
+    # Clean up directory by removing all multiple spaces and change it by one space
+    directory_names = [re.sub(r'\s+', ' ', directory_name).strip() for directory_name in directory_names]
+    
+    base_title = ''
+    for directory_name in directory_names:
+        dir_base_title = _find_base_dir_without_tome_number(directory_name)
+        
+        if not base_title:
+            print(f'First match {directory_name=} => {dir_base_title=}')
+            base_title = dir_base_title
+            continue
+        # All subdirectory must match the same base title
+        if base_title != dir_base_title:
+            print(f'Error: cannot find a common base title for sub directories {base_title=} != {dir_base_title=}')
+            return ''
+    
+    if not base_title:
+        return ''
+    
+    print(f'Base title: {base_title=}')
+    
+    # Extract volume numbers
+    volume_numbers = [int(re.search(r'\d+', chapter, flags=re.IGNORECASE).group()) for chapter in directory_names if re.search(r'\d+', chapter)]
+    
+    if not volume_numbers:
+        return base_title
+    
+    # Generate the title suffix
+    min_volume = min(volume_numbers)
+    max_volume = max(volume_numbers)
+    
+    if min_volume == max_volume:
+        title_suffix = f'{min_volume}'
+    else:
+        title_suffix = f'{min_volume}-{max_volume}'
+    
+    return f'{base_title} -- {title_suffix}'

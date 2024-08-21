@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import QFileDialog
 from .image import guess_manga_or_webtoon_image, is_splitable
 from .parameters import parameters
 from .ui_component import UIInput, UIRectButton, UIComboBox, UIProgressBar, UIRectButtonConvert
+from .util import find_compact_title
 from .worker import Worker
 
 COMPONENTS = {
@@ -159,7 +160,7 @@ class UIController(QObject):
             elif os.path.isdir(file_path):
                 if is_only_main_title_dir:
                     self.__add_main_directory(file_path)
-                else: # real chapter/tome name
+                else:  # real chapter/tome name
                     self.__add_directory(file_path, chapter_name)
         
         if len(parameters.get_images()):
@@ -199,10 +200,29 @@ class UIController(QObject):
         split_row_text.setProperty("text", message)
     
     
-    # We are looking for the most less level directory that is common to ALL image paths
+    # If the chapters are in a common way of naming, we can guess the title
+    # like:
+    # chapters = [Cyber Weapon Z T2, Cyber Weapon Z T3, Cyber Weapon Z T4] => result=Cyber Weapon Z 2-4
+    def _guess_title_from_chapters(self):
+        # type: () -> str
+        
+        chapters = parameters.get_chapters()
+        print('Guess title from chapters:', chapters)
+        r = find_compact_title(chapters)
+        print(f'Guess title from chapters: {r}')
+        return r
+    
+    
+    # We are looking for the less level directory that is common to ALL image paths
     # and this will give us the title
     def _guess_title(self):
         print(f'UIController::_guess_title')
+        
+        # First try with chapters
+        title_from_chapters = self._guess_title_from_chapters()
+        if title_from_chapters:
+            self._set_title(title_from_chapters)
+            return
         
         image_paths = parameters.get_images()
         
@@ -293,6 +313,7 @@ class UIController(QObject):
         # can be the default ~ or the last one saved
         self._set_output_directory(parameters.get_output_directory())
     
+    
     def __add_main_directory(self, directory):
         # type: (str) -> None
         
@@ -310,6 +331,7 @@ class UIController(QObject):
                 self._file_path_model.add_file_path(file_path, main_chapter, 0.33)
             elif os.path.isdir(file_path):
                 chapter_name = filename  # this is a direct sub-dir, so use it as chapter name
+                parameters.add_chapter(chapter_name)
                 print(f'UIController::__add_main_directory:: found a CHAPTER {chapter_name=}')
                 self.__add_directory(file_path, chapter_name)
     
