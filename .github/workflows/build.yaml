@@ -44,7 +44,7 @@ jobs:
       - name: Create Tag
         id: create_tag
         run: |
-          git tag v0.2
+          git tag -f v0.2
           git push origin v0.2
 
       - name: Create Release
