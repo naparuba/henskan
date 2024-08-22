@@ -64,3 +64,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: henskan.zip
+          tag_name: v0.2
