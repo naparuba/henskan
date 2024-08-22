@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('henskan/ui', 'henskan/ui'), ('henskan/img', 'henskan/img'), ('henskan/resources', 'henskan/resources')],
+    datas=[('henskan/ui', 'henskan/ui'), ('henskan/img', 'henskan/img')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
