@@ -53,11 +53,8 @@ jobs:
         prerelease: true
 
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1.1.0
+      uses: softprops/action-gh-release@v2.0.8
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: henskan.zip
-        asset_name: henskan.zip
-        asset_content_type: application/zip
+        files: henskan.zip
