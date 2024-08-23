@@ -9,7 +9,7 @@ devices written in Python. With this application you can easily:
   * *  Automatically enhance your image by removing useless white border, so making scan bigger on e-reader.
   * *  Automatically rotate images if needed.
 *   Webtoon:
-  * *  Automatically split the vertical images into pages that are readable on e-reader
+  * *  Automatically smart split the vertical images into pages that are readable on e-reader
 
 It is based on the previous project [Mangle](https://github.com/FooSoft/mangle), which is no longer maintained.
 
@@ -83,3 +83,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+## TODO  ##
+
+* finish the PDF for Kobo (and bench it)
+* try and help user on the webtoon directory, and image cleaning
+* show in the readme how the smart cut is done
