@@ -21,7 +21,9 @@ jobs:
 
       - name: Read version from file
         id: read_version
-        run: echo "VERSION=$(cat henskan/version.txt)" >> $GITHUB_ENV
+        run: |
+          $version = Get-Content henskan/version.txt
+          echo "VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v5
