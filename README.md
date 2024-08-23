@@ -1,55 +1,40 @@
 # Henskan #
 
-Mangle is a cross-platform image converter and optimizer built for reading Manga on the Amazon Kindle and other E-ink
+Henskan is a image converter and optimizer built for reading Manga on the Amazon Kindle and other E-ink (like Kobo)
 devices written in Python. With this application you can easily:
 
-*   Sort and organize images from different directories; bulk rename feature exists for output to the Kindle.
-*   Optionally re-save images in a format Kindle will be sure to understand with no visible quality loss.
-*   Downsample and rotate images for optimal viewing on Kindle, convert to grayscale to save space and improve contrast.
-*   Automatically generate book meta-data so that your Manga is always properly detected and viewable in-order.
+*   Load & sort images from directories
+*   Split if need (double page scans), convert to grayscale to save space and improve contrast.
+*   Manga:
+  * *  Automatically enhance your image by removing useless white border, so making scan bigger on e-reader.
+  * *  Automatically rotate images if needed.
+*   Webtoon:
+  * *  Automatically split the vertical images into pages that are readable on e-reader
+
+It is based on the previous project [Mangle](https://github.com/FooSoft/mangle), which is no longer maintained.
 
 ## Motivation ##
 
-Many years ago I received an Amazon Kindle as a gift. I immediately began playing around with it and reading about
-certain undocumented features that the Kindle has to offer. After a couple of hours I discovered it to be the perfect
-device for reading Manga is almost always grayscale, and the aspect ratio fits the Kindle's 600x800 pixel screen almost
-perfectly. Better yet, the Kindle's undocumented image viewer actually keeps track of the last image you viewed and thus
-you are always able to return to the page you left off on when you power on your Kindle. The device supports several
-popular image formats (jpeg, png, gif, etc), and is able to dither and downscale images to fit the screen.
+I tried [KCC](https://github.com/ciromattia/kcc) and [Mangle](https://github.com/FooSoft/mangle), and found that Mangle was 
+far easier and efficient to use than KCC.
 
-However... The Kindle's image viewer does have certain shortcomings:
+After provide some patchs and features to Mangle, this project was archived by its author. So I decided to fork it and
+continue the development as Henskan (based on the word "Henkan" which means "conversion" in Japanese).
 
-*   The Kindle is very picky about file format; any additional embedded data (thumbnails, comments, possibly even EXIF
-    data) can confuse it. As a result, images may not display properly or even not at all (which actually prevents you
-    from reading the given book, as one bad panel will prevent you from viewing subsequent images).
-*   The first image that you view in a Manga (until the Kindle first writes the "bookmark" file) seems to be arbitrary
-    even when files are named sequentially.  About half the time it will correctly pick the first file in the batch, at
-    other times it will pick out some other image seemingly at random.
-*   Normally for Kindle to find your Manga scans you have to press <kbd>Alt</kbd> + <kbd>Z</kbd> on the home screen. I
-    haven't always had luck with it correctly identifying image directories. At other times, after finding an image
-    directory the Kindle will appear to hang while trying to access it (forcing you to return to the home screen).
-*   The Kindle image viewer has no functionality to rotate images. So if there is a horizontally large image (such as
-    what often happens with dual-page scans), it can be difficult to make out the text because the image is simply
-    scaled to fit (consequently leaving a lot of wasted space at the bottom of the screen).
-*   Scanlation images are oftentimes much larger than the 600x800 screen; not only does this make them take more space
-    on your memory card but it also slows down image loading (the Kindle has to read more data off of the slow SD card
-    and scale the image). Scanlations often also include color scans of covers and inserts which take up more space than
-    a grayscale equivalent (which is would be fine for the Kindle's limited display).
-*   Kindle's image viewer provides no way to sort images (to determine in which order they are shown). This can be very
-    problematic especially considering that scanlation groups have differing naming conventions, and as a result files
-    from later chapters may appear before earlier ones when you are reading your Manga (spoilers ftl).
+I simplify a lof the UI, remove some features that I don't use, and add some new ones. I also try to make the code more
+readable and maintainable. I added a lot of feature to auto-detect manga/webtoon, and also to auto-enhance the images based on their colors/greyscale,
+and detect the name automatically.
 
-Mangle was born out of my annoyance with these issues. The program name is a portmanteau of "Manga" and "Kindle"; I
-thought it was pretty clever at the time.
+Note that Kindle output (pdf) will also have automatically generated table of content (there is no such feature in the CBZ format for Kobo).
 
 ## Usage ##
 
-1.  Add the desired images and image directories to the current book.
-2.  Re-order the images as needed (files pre-sorted alphabetically).
-3.  Configure the book title and image processing options.
-4.  Create a root-level directory on your Kindle called `pictures` (case sensitive).
-5.  Export your images, selecting the `pictures` directory you just created.
-6.  Enjoy your Manga (if it doesn't show up, press <kbd>Alt</kbd> + <kbd>Z</kbd> while on the home menu).
+1.  Just drag & drop you Manga/Webtoon directory on the application.
+2.  Check if the autodetections are ok: split or not, manga/webtoon name detected, etc
+3.  Select your E-reader model (Kindle or Kobo)
+3.  Select the export directory if you want to change
+5.  Export your images
+6.  Enjoy your Manga :)
 
 ## Requirements ##
 
@@ -62,17 +47,7 @@ For running from source:
 
 ## Installation ##
 
-Pre-build binaries are available for the platforms listed below. I don't have the means to make MacOS X releases myself,
-so I am providing the old (and unsupported) package built by Rob White instead. Linux users should run Mangle directly
-from source.
-
-*  [mangle_win.zip](https://foosoft.net/projects/mangle/dl/mangle_win.zip)
-
-
-## Building for Windows ##
-
-On Windows you can build with the command:
-   pyinstaller.exe --name mangle -y --add-data "mangle/ui;mangle/ui" --add-data "mangle/img;mangle/img" --add-data "mangle/resources;mangle/resources" --clean -d all --noconsole --onefile --icon=mangle/img/splash.jpg main.py
+Just download the latest release from the [releases page](https://github.com/naparuba/henskan/releases) and run it.
 
 ## Logo:
 Generated with https://fontmeme.com/fonts/badaboom-bb-font/ & gimp
@@ -80,15 +55,19 @@ Generated with https://fontmeme.com/fonts/badaboom-bb-font/ & gimp
 
 ## Screenshots ##
 
-[![Main window](https://foosoft.net/projects/mangle/img/main-thumb.png)](https://foosoft.net/projects/mangle/img/main.png)
-[![Options dialog](https://foosoft.net/projects/mangle/img/options-thumb.png)](https://foosoft.net/projects/mangle/img/options.png)
+[![Splash screen](images/splash_screen.png)](images/splash_screen.png)
 
-## On the Kindle... ##
+[![Splash screen](images/drop_images.png)](images/drop_images.png)
 
-[![](https://foosoft.net/projects/mangle/img/kindle1-thumb.png)](https://foosoft.net/projects/mangle/img/kindle1.png)
-[![](https://foosoft.net/projects/mangle/img/kindle2-thumb.png)](https://foosoft.net/projects/mangle/img/kindle2.png)
-[![](https://foosoft.net/projects/mangle/img/kindle3-thumb.png)](https://foosoft.net/projects/mangle/img/kindle3.png)
-[![](https://foosoft.net/projects/mangle/img/kindle4-thumb.png)](https://foosoft.net/projects/mangle/img/kindle4.png)
+[![Splash screen](images/auto-configure.png)](images/auto-configure.png)
+
+[![Splash screen](images/finish.png)](images/finish.png)
+
+
+## On the E-reader ##
+
+[![](images/reality.jpg)](images/reality.jpg)
+
 
 ## License ##
 
