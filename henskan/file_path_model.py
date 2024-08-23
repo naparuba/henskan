@@ -14,8 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import hashlib
 import os
-import time
 
 from PyQt6.QtCore import QAbstractListModel, QModelIndex, Qt, QVariant
 
@@ -71,7 +71,7 @@ class FilePathModel(QAbstractListModel):
     def roleNames(self):
         return {
             FilePathModel.FullPathRole: b"full_path",
-            FilePathModel.SizeRole:     b"size",
+            FilePathModel.SizeRole:     b"size",  # TODO: keep the capter name, can be usefuul for future display and cleaning
         }
     
     
@@ -83,8 +83,62 @@ class FilePathModel(QAbstractListModel):
         self.endInsertRows()
     
     
+    # We will look at duplicate images, and remove them, because it must be scan team ad
+    # NOTE: we cannot hash all files, so first look at size duplicate, and then for same size, we can compute
+    #       the hash.
+    def _clean_duplicates_images(self):
+        file_by_sizes = {}
+        _idx_to_delete = []
+        _full_names_to_delete = []
+        
+        # First look at same size
+        for idx, entry in enumerate(self._items):
+            filename = entry["full_path"]
+            size = os.path.getsize(filename)
+            # print "File: %s => %s " % (filename, size)
+            if size not in file_by_sizes:
+                file_by_sizes[size] = []
+            file_by_sizes[size].append((idx, filename))
+        
+        # For same size, compute hash
+        sizes = list(file_by_sizes.keys())
+        sizes.sort()
+        for size in sizes:
+            nb_elements = len(file_by_sizes[size])
+            if nb_elements == 1:
+                continue
+            _hashs = {}
+            for idx, filename in file_by_sizes[size]:
+                with open(filename, 'rb') as f:
+                    buf = f.read()
+                    _hash = hashlib.sha1(buf).hexdigest()
+                    if _hash not in _hashs:
+                        _hashs[_hash] = []
+                    _hashs[_hash].append(idx)
+            for idxs in _hashs.values():
+                if len(idxs) == 1:
+                    continue
+                _idx_to_delete.extend(idxs)
+        
+        # Now clean duplicate images
+        if _idx_to_delete:
+            print("We will clean a total of %s of %s images" % (len(_idx_to_delete), len(self._items)))
+            # We need to remove by the end
+            _idx_to_delete.sort()
+            _idx_to_delete.reverse()
+            for idx in _idx_to_delete:
+                item = self._items.pop(idx)
+                _full_names_to_delete.append(item["full_path"])
+        
+        # Also clean in data
+        parameters.remove_images(_full_names_to_delete)
+    
+    
     # When we did finish to add files, then we can sort and display them
     def finish_add_files(self):
         self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
+        
+        self._clean_duplicates_images()
+        
         self._items.sort(key=lambda item: item["full_path"])
         self.endInsertRows()

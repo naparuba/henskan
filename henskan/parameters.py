@@ -182,6 +182,20 @@ class Parameters(object):
         print(f'[{time.time() - t0:.3f}s] Parameters:: Added image: {image_path} (current size: {len(self._images)})')
     
     
+    def remove_images(self, images_to_delete):
+        print(f'Cleaning images : {images_to_delete=}')
+        update = {}
+        for chapter_name, images in self._images_by_chapter.items():
+            nb_start = len(images)
+            images = [image for image in images if image not in images_to_delete]
+            update[chapter_name] = images
+            nb_after_clean = len(images)
+            if nb_start != nb_after_clean:
+                print(f'Cleaned {nb_start - nb_after_clean} images in chapter {chapter_name}')
+            
+        self._images_by_chapter.update(update)
+    
+    
     def add_chapter(self, chapter):
         # type: (str) -> None
         self._chapters.append(chapter)

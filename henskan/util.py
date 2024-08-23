@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os.path
 import re
 
@@ -38,6 +37,7 @@ def get_ui_path(relative):
     my_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(my_dir, relative)
 
+
 def _find_base_dir_without_tome_number(directory_name):
     # type: (str) -> str
     print(f'\n{directory_name=}')
@@ -46,7 +46,7 @@ def _find_base_dir_without_tome_number(directory_name):
                        r'\s*\d+$',  # ELDEN RING – Le chemin vers l’Arbre-Monde - 1
                        r'\s*\d+.*',  # Hellboy (Delcourt) - 01 - Les germes de la destruction
                        ]
-
+    
     # Extract the base title by removing volume/chapter , and remove ALL that is AFTER T03 or Tome03
     for lookup_pattern in lookup_patterns:
         print('lookup_pattern:', lookup_pattern)
@@ -55,10 +55,8 @@ def _find_base_dir_without_tome_number(directory_name):
             print(f'lookup_pattern: {lookup_pattern=} not found, still {dir_base_title=}')
             continue  # not found
         return dir_base_title
-
+    
     return ''
-    
-    
 
 
 def find_compact_title(directory_names):
