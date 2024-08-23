@@ -4,7 +4,7 @@ Henskan is a image converter and optimizer built for reading Manga on the Amazon
 devices written in Python. With this application you can easily:
 
 *   Load & sort images from directories
-*   Split if need (double page scans), convert to grayscale to save space and improve contrast.
+*   Split (if double page scans), convert into grayscale to save space and improve contrast.
 *   Manga:
   * *  Automatically enhance your image by removing useless white border, so making scan bigger on e-reader.
   * *  Automatically rotate images if needed.
