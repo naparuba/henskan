@@ -119,7 +119,7 @@ class UIController(QObject):
     
     def __is_image_file(self, filename):
         # type: (LiteralString | str | bytes) -> bool
-        image_exts = ('.jpeg', '.jpg', '.gif', '.png', '.webp')
+        image_exts = ('.jpeg', '.jpg', '.gif', '.png', '.webp', 'ppm')
         file_extension = self.__get_file_extension(filename)
         return file_extension in image_exts
     

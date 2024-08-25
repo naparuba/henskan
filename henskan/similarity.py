@@ -16,27 +16,10 @@
 
 import time
 import os
-
-try:
-    from imagehash import imagehash
-except ImportError:
-    imagehash = None
-    print("Missing imagehash lib")
+import imagehash
 
 from .image import Image
-
-UNWANTED = r'C:\Users\j.gabes\Desktop\export\unwanted'
-DELETED = r'C:\Users\j.gabes\Desktop\export\deleted'
-
-# Mine are for debug, on other pc, use documents ones
-if not os.path.exists(UNWANTED):
-    UNWANTED = os.path.expanduser('~/Documents/henskan_unwanted')
-    if not os.path.exists(UNWANTED):
-        os.mkdir(UNWANTED)
-if not os.path.exists(DELETED):
-    DELETED = os.path.expanduser('~/Documents/henskan_deleted')
-    if not os.path.exists(DELETED):
-        os.mkdir(DELETED)
+from .parameters import UNWANTED, DELETED
 
 THRESHOLD = 6
 
@@ -69,36 +52,34 @@ class Similarity(object):
         print(" * Loading unwanted images: %s" % UNWANTED)
         for f_path in os.listdir(UNWANTED):
             full_path = os.path.join(UNWANTED, f_path)
-            hash = imagehash.average_hash(Image.open(full_path), hash_size=HASH_SIZE)
+            try:
+                img = Image.open(full_path)
+            except Exception as e:
+                print(" * Cannot open image %s: %s" % (full_path, e))
+                continue
+            hash = imagehash.average_hash(img, hash_size=HASH_SIZE)
             self._unwanted_hashes[f_path] = hash
         print("   - %s hashed loaded in %.3fs" % (len(self._unwanted_hashes), time.time() - t0))
     
     
-    def add_deleted_image(self, f_path, image, diff, do_move):
+    def _add_deleted_image(self, f_path, image, diff, do_move):
         self._nb_deleted += 1
         print(" * Image is unwanted (from %s), deleted=%s" % (f_path, self._nb_deleted))
-        save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
+        save_deleted_path = os.path.join(DELETED, 'unwanted_similarity_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
         if do_move:
             image.save(save_deleted_path)
     
     
     def is_valid_image(self, image, do_move=True):
-        if imagehash is None:
-            print("ERROR: cannot compare unwanted image")
-            return True
         elapsed_at_start = int(self._sum_time)
         t0 = time.time()
         hash = imagehash.average_hash(image, hash_size=HASH_SIZE)
         is_valid = True
         for (f_path, ref_hash) in self._unwanted_hashes.items():
             diff = hash - ref_hash
+            #print(f'[SIMILARITY] {f_path} - {diff}')
             if diff <= THRESHOLD:
-                self.add_deleted_image(f_path, image, diff, do_move=do_move)
-                # self._nb_deleted += 1
-                # print " * Image is unwanted (from %s), deleted=%s" % (f_path, self._nb_deleted)
-                # save_deleted_path = os.path.join(DELETED, 'deleted_%s--diff_%s__%s.jpg' % (f_path, diff, self._nb_deleted))
-                # if do_move:
-                #     image.save(save_deleted_path)
+                self._add_deleted_image(f_path, image, diff, do_move=do_move)
                 is_valid = False
                 break
         self._sum_time += (time.time() - t0)

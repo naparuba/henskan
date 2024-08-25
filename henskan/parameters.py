@@ -21,6 +21,28 @@ from pathlib import Path
 
 from .util import natural_key
 
+if os.name == 'nt':
+    BASE_HENSKAN_DIR = os.path.join(str(Path.home()), 'Documents', 'henskan')
+else:
+    BASE_HENSKAN_DIR = os.path.join(str(Path.home()), 'henskan')
+
+if not os.path.exists(BASE_HENSKAN_DIR):
+    os.mkdir(BASE_HENSKAN_DIR)
+
+UNWANTED = os.path.join(BASE_HENSKAN_DIR, 'unwanted_images')
+if not os.path.exists(UNWANTED):
+    os.mkdir(UNWANTED)
+
+unwanted_doc = os.path.join(UNWANTED, 'readme.txt')
+if not os.path.exists(unwanted_doc):
+    with open(unwanted_doc, 'w') as f:
+        f.write(
+            'Put in this directory images you don\'t want. Images split will be automatically compared to theses images, and if one is "similar" then it will be removed\n')
+
+DELETED = os.path.join(BASE_HENSKAN_DIR, 'deleted_images')
+if not os.path.exists(DELETED):
+    os.mkdir(DELETED)
+
 
 class Parameters(object):
     DefaultDevice = 'Kobo Libra H2O'
@@ -62,14 +84,12 @@ class Parameters(object):
         self._split_left_then_right = False
         self._is_webtoon = False
         
-        self._default_document_directory = str(Path.home())  # ~ on Linux
-        if os.name == 'nt':
-            self._default_document_directory = os.path.join(self._default_document_directory, 'Documents')
+        self._default_document_directory = BASE_HENSKAN_DIR
         self._output_directory = self._default_document_directory  # value used only at first launch, or if saved directory is missing
     
     
     def __get_previous_parameter_path(self):
-        return os.path.join(self._default_document_directory, '.henskan_parameters.json')
+        return os.path.join(self._default_document_directory, 'henskan_parameters.json')
     
     
     def load_previous_parameters(self):
@@ -146,8 +166,10 @@ class Parameters(object):
     def get_device(self):
         return self._device
     
+    
     def get_device_index(self):
         return self._device_index
+    
     
     def set_device(self, device, index):
         self._device = device
@@ -192,7 +214,7 @@ class Parameters(object):
             nb_after_clean = len(images)
             if nb_start != nb_after_clean:
                 print(f'Cleaned {nb_start - nb_after_clean} images in chapter {chapter_name}')
-            
+        
         self._images_by_chapter.update(update)
     
     
@@ -201,18 +223,22 @@ class Parameters(object):
         self._chapters.append(chapter)
         print(f'Parameters:: Added chapter: {chapter} (current size: {len(self._chapters)})')
     
+    
     def get_images(self):
         # type: () -> list[str]
         return self._images
-
+    
+    
     def get_images_by_chapter(self):
         # type: () -> dict[str, list[str]]
         return self._images_by_chapter
-
+    
+    
     def get_chapters(self):
         # type: () -> list[str]
         return self._chapters
-
+    
+    
     # Sort images by natural key (so that 2.jpg comes before 10.jpg), after remove duplicates
     def sort_images(self):
         # type: () -> None
@@ -225,5 +251,6 @@ class Parameters(object):
         for chapter in self._chapters:
             self._images_by_chapter[chapter] = sorted(set(self._images_by_chapter[chapter]), key=natural_key)
             print(f'Parameters:: Sorted images for chapter {chapter}: {self._images_by_chapter[chapter]}')
+
 
 parameters = Parameters()

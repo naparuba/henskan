@@ -774,19 +774,19 @@ def __parse_webtoon_block(image, start_of_box, width, end_of_box, split_final_im
             variance = 999  # do not delete it
         
         if variance < 1:  # mostly the same color, skip it
-            similarity.add_deleted_image('too_low_variance', image_cropped, 'variance_%.2f' % variance, do_move=True)
+            similarity._add_deleted_image('too_low_variance', image_cropped, 'variance_%.2f' % variance, do_move=True)
             print('  ** SKIP image cropped variance: %s is too small' % str(variance))
             continue
         # Skip images that are too small (bugs in cut detection protection)
         if __get_image_height(image_cropped) <= MIN_BOX_ALLOWED_HEIGHT:
             print("SKIP: image is too small to save (%dpx)" % __get_image_height(image_cropped))
             continue
-        if not similarity.is_valid_image(image_cropped):
-            print(" ** DROPPING IMAGE")
+        if not similarity.is_valid_image(image_cropped, do_move=True):
+            print(" ** [similarity] DROPPING IMAGE")
             continue
         if _is_full_background_image(image_cropped):
             print(" ** Dropping full white/black image")
-            similarity.add_deleted_image('too_white', image_cropped, 0, do_move=True)
+            similarity._add_deleted_image('too_white', image_cropped, 0, do_move=True)
             continue
         print(" Split size: %s" % str(image_cropped.size))
         split_final_images.append(image_cropped)
@@ -872,7 +872,7 @@ def _split_webtoon(image):
                 # TODO: do not allow a too big white part
                 continue
             current_box_size = y - start_of_box
-            # print "WHITE: current box size detecte", current_box_size
+            # print "WHITE: current box size detect", current_box_size
             # Close the box only if the last black if far ago
             # Of if the box is very high
             distance_from_last_black = y - last_black_line

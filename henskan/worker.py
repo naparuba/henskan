@@ -28,7 +28,7 @@ from .archive import ARCHIVE_FORMATS
 from .archive_cbz import ArchiveCBZ
 from .archive_pdf import ArchivePDF
 from .image import EReaderData, convert_image, save_image, is_splitable
-from .parameters import parameters
+from .parameters import parameters, UNWANTED, DELETED
 
 
 class Worker(QObject):
@@ -94,7 +94,7 @@ class Worker(QObject):
         index = self._index_value
         pages_split = self._split_page_offset
         target = os.path.join(self._book_path, '%05d.png' % (index + pages_split))
-        source = image_path #parameters._images[index]
+        source = image_path  # parameters._images[index]
         
         if index == 0:
             try:
@@ -214,4 +214,10 @@ class Worker(QObject):
         
         # Show the output directory so the user can quickly access it
         QDesktopServices.openUrl(QUrl.fromLocalFile(directory))
+        
+        # If webtoon, also show useful directory to analyse the splits
+        if parameters.is_webtoon():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(UNWANTED))
+            QDesktopServices.openUrl(QUrl.fromLocalFile(DELETED))
+        
         print(f'Worker::run::Exiting')
