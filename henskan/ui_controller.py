@@ -258,15 +258,26 @@ class UIController(QObject):
         if len(images) < nb_random_need:
             return
         
-        sampled_images = random.sample(images, min(nb_random_need, len(images)))
+        sampled_images = set()
         quorum_size = (len(sampled_images) // 2) + 1
         
         nb_webtoon = 0
         nb_should_split = 0
         
-        for image_path in sampled_images:
+        while len(sampled_images) < nb_random_need:
+            print(f'nb sampled_images: {len(sampled_images)}')
+            image_path = random.choice(images)
+            if image_path in sampled_images:
+                continue
+            
             print(f'Guessing {image_path}')
-            image_guess = guess_manga_or_webtoon_image(image_path)
+            try:
+                image_guess = guess_manga_or_webtoon_image(image_path)
+            except Exception as exp:  # TODO: change a for with a while, so we can have the good number of images
+                print(f'Error while guessing: {exp}')
+                continue
+                # don't count it if it's an error
+            sampled_images.add(image_path)
             if image_guess == 'webtoon':
                 nb_webtoon += 1
                 print(f'''{image_path} is a webtoon''')
