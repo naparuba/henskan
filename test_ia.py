@@ -413,7 +413,7 @@ def _image_sharpness(image):
 
 archive = ArchivePDF('test_out/out', 'test_title', 'Kobo Elipsa 2E')
 
-for i in range(1, 27):
+for i in range(1, 28):
     print(f'\n\n')
     start = time.time()
     in_path = f"test_in/img{i}.jpg"
