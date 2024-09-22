@@ -74,9 +74,10 @@ ApplicationWindow {
         anchors.topMargin: 200
         anchors.right: parent.right
         anchors.rightMargin: 400
-        source: "../img/henskan.png"
+        source: "../img/logo.png"
         height: 100
         width: 300
+
 
         // 1: First bump in the middle of the screen
         SequentialAnimation on anchors.topMargin {
