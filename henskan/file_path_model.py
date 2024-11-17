@@ -20,6 +20,7 @@ import os
 from PyQt6.QtCore import QAbstractListModel, QModelIndex, Qt, QVariant
 
 from .parameters import parameters
+from .util import natural_key
 
 
 class FilePathModel(QAbstractListModel):
@@ -140,5 +141,5 @@ class FilePathModel(QAbstractListModel):
         
         self._clean_duplicates_images()
         
-        self._items.sort(key=lambda item: item["full_path"])
+        self._items.sort(key=lambda item: natural_key(item["full_path"]))
         self.endInsertRows()
