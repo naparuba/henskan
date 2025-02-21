@@ -27,7 +27,7 @@ from PyQt6.QtWidgets import QFileDialog
 from .image import guess_manga_or_webtoon_image, is_splitable
 from .parameters import parameters
 from .ui_component import UIInput, UIRectButton, UIComboBox, UIProgressBar, UIRectButtonConvert
-from .util import find_compact_title
+from .util import find_compact_title, natural_key
 from .worker import Worker
 
 COMPONENTS = {
@@ -104,6 +104,7 @@ class UIController(QObject):
     
     
     def _set_title(self, text):
+        print(f'_set_title:: {text}')
         parameters.set_title(text)
         
         self._components['title_input'].set_value(text)
@@ -149,7 +150,7 @@ class UIController(QObject):
         # For chapters, we cannot use the given directory if there is only one directory
         is_only_main_title_dir = len(paths) == 1
         
-        paths.sort()
+        paths.sort(key=lambda item: natural_key(item))
         print(f'Loading Paths: {paths}')
         for file_path in paths:
             chapter_name = os.path.basename(file_path)
@@ -227,9 +228,11 @@ class UIController(QObject):
         image_paths = parameters.get_images()
         
         if not image_paths:
+            print('No images')
             return
         
         # Get the common path
+        print(f'image_path: {image_paths}')
         common_path = os.path.commonpath(image_paths)
         print(f'Common path: {common_path}')
         

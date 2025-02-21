@@ -76,8 +76,10 @@ def find_compact_title(directory_names):
     # Clean up directory by removing all . and _ characters, and replace them by space
     directory_names = [re.sub(r'\.', ' ', re.sub(r'_', ' ', directory_name)).strip() for directory_name in directory_names]
     
-    # Clean up directory by removing all - characters, and replace them by space
-    directory_names = [re.sub(r'-', '', directory_name).strip() for directory_name in directory_names]
+    to_del = (r'-', r'#', r'''%''')
+    for c in to_del:
+        # Clean up directory by removing all - characters
+        directory_names = [re.sub(c, '', directory_name).strip() for directory_name in directory_names]
     
     # Clean up directory by removing all multiple spaces and change it by one space
     directory_names = [re.sub(r'\s+', ' ', directory_name).strip() for directory_name in directory_names]

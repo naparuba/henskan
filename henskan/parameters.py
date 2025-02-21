@@ -252,5 +252,8 @@ class Parameters(object):
             self._images_by_chapter[chapter] = sorted(set(self._images_by_chapter[chapter]), key=natural_key)
             print(f'Parameters:: Sorted images for chapter {chapter}: {self._images_by_chapter[chapter]}')
 
+        # Also sort chapters
+        self._chapters = sorted(set(self._chapters), key=natural_key)
+        print(f'Parameters:: Sorted chapters: {self._chapters}')
 
 parameters = Parameters()

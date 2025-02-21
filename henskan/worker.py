@@ -180,9 +180,12 @@ class Worker(QObject):
         start = time.time()
         # Now work!
         i = 0
-        for chapter, images_in_chapter in images_by_chapter.items():
+        
+        for chapter in parameters.get_chapters():  # note: already sorted
+            images_in_chapter = images_by_chapter[chapter]  # already sorted too
             self._archive.add_chapter(chapter)  # let the archive know we have a new chapter/tome
             for image_path in images_in_chapter:
+                print(f' SAVING:: {chapter} => {image_path}')
                 i += 1
                 self._tick(image_path)
                 pct_float = float(i) / len(parameters.get_images())
