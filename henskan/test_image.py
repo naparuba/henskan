@@ -7,23 +7,19 @@ image.set_debug()
 DEVICE = 'Kobo Aura H2O'
 
 my_dir = os.path.abspath(os.path.curdir)
-print
-"Image module: %s" % image
+print("Image module: %s" % image)
 
 IMG1_PATH = os.path.join(my_dir, 'resources', 'img1.jpg')
 if not os.path.exists(IMG1_PATH):
-    print
-    "ERROR: no img1 to test"
+    print("ERROR: no img1 to test")
     sys.exit(2)
 
 # Clean all tmp
 TMP_DIR = os.path.join(my_dir, 'tmp')
-print
-" * Cleaning tmp dir: %s" % TMP_DIR
+print(" * Cleaning tmp dir: %s" % TMP_DIR)
 for f_path in os.listdir(TMP_DIR):
     full_path = os.path.join(TMP_DIR, f_path)
-    print
-    "  - %s" % full_path
+    print("  - %s" % full_path)
     os.unlink(full_path)
 
 
@@ -47,32 +43,26 @@ from PIL import Image, ImageStat
 def parse_webtoon(number):
     WEBTOON_PATH = os.path.join(my_dir, 'resources', 'webtoon_%s.jpg' % number)
     if not os.path.exists(WEBTOON_PATH):
-        print
-        "ERROR: no webtoon to test"
+        print("ERROR: no webtoon to test")
         sys.exit(2)
     
-    print
-    " ======== WEBTOON %s ========" % number
+    print(" ======== WEBTOON %s ========" % number)
     source = WEBTOON_PATH
     target = os.path.join(TMP_DIR, 'webtoon_%s.jpg' % number)
     flags = image.ImageFlags.AutoCrop | image.ImageFlags.Quantize | image.ImageFlags.Webtoon  # | image.ImageFlags.Resize
     
     img = Image.open(source)
-    print
-    "VARIANCE %s" % number, ImageStat.Stat(img).var
-    print
-    "Most color: %s" % str(find_dominant_color(img))
+    print("VARIANCE %s" % number, ImageStat.Stat(img).var)
+    print("Most color: %s" % str(find_dominant_color(img)))
     
-    print
-    ' * Converting image %s' % source
+    print(' * Converting image %s' % source)
     split_images = image.convert_image(source, DEVICE, flags)
     for (idx, split_image) in enumerate(split_images):
         pth = os.path.join(TMP_DIR, 'toon%s_%d.png' % (number, idx))
         print
         '  - saving image %s' % pth
         split_image.save(pth)
-    print
-    '  - Done in %s' % target
+    print('  - Done in %s' % target)
 
 
 # parse_webtoon(1)
@@ -90,8 +80,6 @@ source = IMG1_PATH
 target = os.path.join(TMP_DIR, 'imp1.converted.png')
 flags = image.ImageFlags.AutoCrop | image.ImageFlags.Resize | image.ImageFlags.Quantize
 
-print
-' * Converting image %s' % source
+print(' * Converting image %s' % source)
 image.convert_image(source, DEVICE, flags)
-print
-'  - Done in %s' % target
+print('  - Done in %s' % target)

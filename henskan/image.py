@@ -319,31 +319,50 @@ def _quantize_image(image, palette):
 
 
 @protect_bad_image
-def _resize_image(image, size):
+def _resize_image(image, to_size):
     # type: (Image, tuple[int, int]) -> Image
-    width_dev, height_dev = size
+    width_to_set, height_to_set = to_size
     width_img, height_img = image.size
     
-    if width_img <= width_dev and height_img <= height_dev:
-        return image
-    
     ratio_img = float(width_img) / float(height_img)
-    ratio_width = float(width_img) / float(width_dev)
-    ratio_height = float(height_img) / float(height_dev)
+    ratio_width = float(width_img) / float(width_to_set)
+    ratio_height = float(height_img) / float(height_to_set)
     
     if ratio_width > ratio_height:
-        width_img = width_dev
-        height_img = int(width_dev / ratio_img)
+        width_img = width_to_set
+        height_img = int(width_to_set / ratio_img)
     elif ratio_width < ratio_height:
-        height_img = height_dev
-        width_img = int(height_dev * ratio_img)
+        height_img = height_to_set
+        width_img = int(height_to_set * ratio_img)
     else:
-        width_img, height_img = size
+        width_img, height_img = to_size
     
     if DEBUG:
         print(' * Resizing image from %s to %s/%s' % (image.size, width_img, height_img))
     
+    # Ok we can resize
     return image.resize((width_img, height_img), Image.Resampling.LANCZOS)
+    
+    
+@protect_bad_image
+def _fill_image_to_whole_size(image, to_size):
+    # type: (Image, tuple[int, int]) -> Image
+    white = (255, 255, 255)
+    final_image = Image.new("RGB", to_size, white)  # Fond blanc
+    
+    margin_left = 10
+    image_width, _ = image.size
+    to_width, _ = to_size
+    
+    # If the image is small enough, put a margin of the left
+    if image_width <= to_width - margin_left:
+        paste_position = (margin_left, 0)
+    else: # ok no place for the margin ^^
+        paste_position = (0, 0)
+        
+    final_image.paste(image, paste_position)
+    
+    return final_image
 
 
 @protect_bad_image
@@ -950,8 +969,9 @@ def convert_image(source, split_right=False, split_left=False):
         images = _split_webtoon(image)
         for image in images:
             image = _format_image_to_rgb(image)
-            image = _resize_image(image, size)
             image = _apply_basic_grey(image)
+            image = _resize_image(image, size)
+            image = _fill_image_to_whole_size(image, size)  # note: after gray pass (adding white pixel here)
             converted_images.append(image)
         
         return converted_images
@@ -969,8 +989,6 @@ def convert_image(source, split_right=False, split_left=False):
     image = _auto_crop_image(image)
     # Always Orient based the size: if too large, go paysage
     image = _orient_image(image, size)
-    # Adapt to the EReader native resolution
-    image = _resize_image(image, size)
     
     # Grey :
     #  * MANGA: if the image is mostly grey, we can apply a grey palette
@@ -980,5 +998,9 @@ def convert_image(source, split_right=False, split_left=False):
         image = _apply_grey_palette(image, palette)  # palette are ok for manga black and white, and very small
     else:
         image = _apply_basic_grey(image)  # pillow is better for colors, but is very FAT
+        
+    # Adapt to the EReader native resolution
+    image = _resize_image(image, size)
+    image = _fill_image_to_whole_size(image, size)  # note: after gray pass (adding white pixel here)
     
     return [image]  # only one image if not webtoon
