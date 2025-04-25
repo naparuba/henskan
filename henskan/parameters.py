@@ -243,6 +243,14 @@ class Parameters(object):
     def sort_images(self):
         # type: () -> None
         
+        # Del void chapters
+        chapter_to_del = []
+        for chapter in self._chapters:
+            if not chapter in self._images_by_chapter:
+                chapter_to_del.append(chapter)
+        for chapter in chapter_to_del:
+            self._chapters.remove(chapter)
+        
         sorted_images = sorted(set(self._images), key=natural_key)
         self._images = sorted_images
         print(f'Parameters:: Sorted images: {self._images}')
