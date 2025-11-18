@@ -24,26 +24,73 @@ from henskan.archive import Archive
 
 
 class ArchiveCBZ(Archive):
-    def __init__(self, path):
-        # type: (str) -> None
-        output_directory = os.path.dirname(path)
-        output_file_name = '%s.cbz' % os.path.basename(path)
-        self._output_path = os.path.join(output_directory, output_file_name)
-        self._zipfile = ZipFile(self._output_path, 'w', ZIP_STORED)
-        print(f"[CBZ] file: {self._output_path} open for writing")
+    DEFAULT_MAX_SIZE = 1500 * 1024 * 1024  # 1.5GB
+    
+    
+    def __init__(self, path, max_size=None):
+        # type: (str, int) -> None
+        self._base_output_directory = os.path.dirname(path)
+        self._base_output_name = os.path.basename(path)
+        self._max_size = max_size if max_size is not None else self.DEFAULT_MAX_SIZE
+        self._current_part = 1
+        self._all_output_paths = []
+        
+        self._create_new_part()
+        print(f"[CBZ] Split mode enabled: max size per file = {self._max_size / (1024 ** 3):.2f}GB")
+    
+    
+    def _create_new_part(self):
+        if self._current_part == 1:
+            output_file_name = '%s.cbz' % self._base_output_name
+        else:
+            output_file_name = '%s_part%d.cbz' % (self._base_output_name, self._current_part)
+        
+        self._cbz_path = os.path.join(self._base_output_directory, output_file_name)
+        self._zipfile = ZipFile(self._cbz_path, 'w', ZIP_STORED)
+        self._all_output_paths.append(self._cbz_path)
+        print(f"[CBZ] file: {self._cbz_path} open for writing (part {self._current_part})")
+    
+    
+    def _get_current_size(self):
+        try:
+            return os.path.getsize(self._cbz_path)
+        except OSError:
+            return 0
+    
+    
+    def _should_split(self, new_file_size):
+        current_size = self._get_current_size()
+        return (current_size + new_file_size) > self._max_size
     
     
     def add(self, filename):
         # type: (str) -> None
+        file_size = os.path.getsize(filename)
+        
+        # If too much, close and create a new part
+        if self._should_split(file_size):
+            print(f"[CBZ] Size limit reached ({self._get_current_size() / (1024 ** 3):.2f}GB), creating new part...")
+            self._zipfile.close()
+            self._current_part += 1
+            self._create_new_part()
+        
         arcname = os.path.basename(filename)
         self._zipfile.write(filename, arcname)
+    
     
     # Not managed for CBZ
     def add_chapter(self, title):
         # type: (str) -> None
         pass
     
+    
     def close(self):
         t0 = time.time()
         self._zipfile.close()
-        print(f"[CBZ] file: {self._output_path} generation time: {time.time() - t0:.3f}s")
+        print(f"[CBZ] file: {self._cbz_path} generation time: {time.time() - t0:.3f}s")
+        
+        if len(self._all_output_paths) > 1:
+            print(f"[CBZ] Total parts created: {len(self._all_output_paths)}")
+            for i, path in enumerate(self._all_output_paths, 1):
+                size_mb = os.path.getsize(path) / (1024 ** 2)
+                print(f"[CBZ]   Part {i}: {path} ({size_mb:.2f}MB)")
