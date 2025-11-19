@@ -90,3 +90,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 * finish the PDF for Kobo (and bench it)
 * try and help user on the webtoon directory, and image cleaning
 * show in the readme how the smart cut is done
+
+
+## Testing ##
+
+### Run all tests
+
+```bash
+pytest
+```
+
+### Run with verbose output
+
+```bash
+pytest -v
+```
+
+### Run a specific test file
+
+```bash
+pytest tests/test_guess_title.py
+```
+
+### Run with code coverage
+
+```bash
+pytest --cov=henskan --cov-report=html
+```
+
+Coverage report will be available in `htmlcov/index.html`
+
+### Add a new test
+
+1. Create a file `tests/test_<name>.py`
+2. Write your test functions (they must start with `test_`)
+3. Run `pytest` - it will automatically detect the new file
+
+### Manual test scripts
+
+Files named `manual_test_*.py` in the `tests/` directory are manual test scripts that are not automatically executed by pytest. To run them:
+
+```bash
+python tests/manual_test_image.py
+```
