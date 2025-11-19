@@ -1,4 +1,5 @@
 import unittest
+
 from henskan.util import find_compact_title
 
 

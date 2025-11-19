@@ -3,22 +3,23 @@
 """
 Tests for FilePathModel class
 """
+import hashlib
 import os
+import shutil
 import sys
 import tempfile
-import shutil
-import hashlib
 
 # Add parent directory to path to import henskan modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
-from PyQt6.QtCore import QModelIndex, Qt
+from PyQt6.QtCore import QModelIndex
 from henskan.file_path_model import FilePathModel
 
 
 class TestFilePathModel:
     """Test suite for FilePathModel class"""
+    
     
     @pytest.fixture
     def temp_dir(self):
@@ -28,11 +29,13 @@ class TestFilePathModel:
         # Cleanup after test
         shutil.rmtree(temp_path, ignore_errors=True)
     
+    
     @pytest.fixture
     def model(self, qtbot):
         """Create a FilePathModel instance"""
         model = FilePathModel()
         return model
+    
     
     @pytest.fixture
     def sample_files(self, temp_dir):
@@ -44,6 +47,7 @@ class TestFilePathModel:
                 f.write(f"Test content {i}".encode('utf-8'))
             files.append(file_path)
         return files
+    
     
     @pytest.fixture
     def duplicate_files(self, temp_dir):
@@ -74,20 +78,24 @@ class TestFilePathModel:
         
         return files
     
+    
     def test_model_creation(self, model):
         """Test that model can be created"""
         assert model is not None
         assert isinstance(model, FilePathModel)
     
+    
     def test_initial_row_count(self, model):
         """Test that model starts empty"""
         assert model.rowCount() == 0
+    
     
     def test_role_names(self, model):
         """Test role names are correctly defined"""
         roles = model.roleNames()
         assert b"full_path" in roles.values()
         assert b"size" in roles.values()
+    
     
     def test_add_single_file(self, model, sample_files):
         """Test adding a single file"""
@@ -99,6 +107,7 @@ class TestFilePathModel:
         
         assert model.rowCount() == initial_count + 1
     
+    
     def test_add_multiple_files(self, model, sample_files):
         """Test adding multiple files"""
         for idx, file_path in enumerate(sample_files):
@@ -106,6 +115,7 @@ class TestFilePathModel:
             model.add_file_path(file_path, f"Chapter {idx + 1}", file_size)
         
         assert model.rowCount() == len(sample_files)
+    
     
     def test_data_full_path_role(self, model, sample_files):
         """Test retrieving full path data"""
@@ -121,6 +131,7 @@ class TestFilePathModel:
         expected_path = file_path.replace('\\', '/')
         assert expected_path in data or data.endswith(expected_path[-60:])
     
+    
     def test_data_size_role(self, model, sample_files):
         """Test retrieving size data"""
         file_path = sample_files[0]
@@ -133,6 +144,7 @@ class TestFilePathModel:
         
         assert size_data == file_size
     
+    
     def test_data_invalid_index(self, model):
         """Test data retrieval with invalid index"""
         invalid_index = QModelIndex()
@@ -140,6 +152,7 @@ class TestFilePathModel:
         
         # Should return a QVariant or None-like value
         assert data is not None
+    
     
     def test_row_count_with_parent(self, model, sample_files):
         """Test rowCount with parent index"""
@@ -151,6 +164,7 @@ class TestFilePathModel:
         # List model should return 0 for any parent
         parent_index = model.index(0, 0)
         assert model.rowCount(parent_index) == 1
+    
     
     def test_common_prefix_hiding(self, model, temp_dir):
         """Test that common path prefix is replaced with spaces"""
@@ -181,6 +195,7 @@ class TestFilePathModel:
         # Should start with spaces (common prefix replaced)
         assert len(data1) > 0
     
+    
     def test_path_truncation_long_paths(self, model, temp_dir):
         """Test that long paths are truncated to 60 chars"""
         # Create a very long path
@@ -200,6 +215,7 @@ class TestFilePathModel:
         # Should be truncated and start with "..."
         if len(file_path) > 60:
             assert "..." in data
+    
     
     def test_finish_add_files_sorting(self, model, temp_dir):
         """Test that finish_add_files sorts items naturally"""
@@ -234,6 +250,7 @@ class TestFilePathModel:
         # Just verify we have all 4 items after sorting
         assert len(paths) == 4
     
+    
     def test_clean_duplicates_same_size_same_hash(self, model, duplicate_files):
         """Test that duplicate files (same size and hash) are removed"""
         # Add all files including duplicates
@@ -255,6 +272,7 @@ class TestFilePathModel:
         assert final_count < initial_count
         # Note: This tests current behavior. Ideally it should keep one of each duplicate group
         assert final_count >= 1  # At least the unique file should remain
+    
     
     def test_clean_duplicates_same_size_different_hash(self, model, temp_dir):
         """Test that files with same size but different content are kept"""
@@ -281,6 +299,7 @@ class TestFilePathModel:
         # Both should be kept (different hash)
         assert model.rowCount() == 2
     
+    
     def test_clean_duplicates_different_sizes(self, model, temp_dir):
         """Test that files with different sizes are always kept"""
         files = []
@@ -300,6 +319,7 @@ class TestFilePathModel:
         # All should be kept (different sizes)
         assert model.rowCount() == len(files)
     
+    
     def test_items_internal_structure(self, model, sample_files):
         """Test internal _items structure"""
         file_path = sample_files[0]
@@ -313,6 +333,7 @@ class TestFilePathModel:
         assert model._items[0]["full_path"] == file_path
         assert model._items[0]["size"] == file_size
     
+    
     def test_role_constants(self, model):
         """Test that role constants are properly defined"""
         assert hasattr(FilePathModel, 'FullPathRole')
@@ -321,11 +342,13 @@ class TestFilePathModel:
         # Roles should be distinct
         assert FilePathModel.FullPathRole != FilePathModel.SizeRole
     
+    
     def test_empty_finish_add_files(self, model):
         """Test calling finish_add_files on empty model"""
         # Should not crash
         model.finish_add_files()
         assert model.rowCount() == 0
+    
     
     def test_hash_computation_for_duplicates(self, temp_dir):
         """Test that duplicate detection uses SHA1 hash correctly"""
@@ -372,4 +395,3 @@ def qtbot(qapp):
 if __name__ == '__main__':
     # Allow running this test file directly
     pytest.main([__file__, '-v'])
-
