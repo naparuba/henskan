@@ -4,7 +4,6 @@
 Tests for webtoon-specific processing
 """
 import os
-import shutil
 
 from PIL import Image
 
@@ -14,15 +13,6 @@ from .image_test_base import ImageTestBase
 
 class TestWebtoonProcessing(ImageTestBase):
     """Tests for webtoon-specific processing"""
-    
-    @classmethod
-    def setup_class(cls):
-        """Setup test class - create and clean splits directory"""
-        cls.splits_dir = os.path.join(os.path.dirname(__file__), "splits")
-        # Clean and recreate splits directory
-        if os.path.exists(cls.splits_dir):
-            shutil.rmtree(cls.splits_dir)
-        os.makedirs(cls.splits_dir)
     
     def _assert_valid_rgb_tuple(self, color, message_prefix=""):
         """Helper to assert a color is a valid RGB tuple"""
@@ -54,10 +44,11 @@ class TestWebtoonProcessing(ImageTestBase):
     
     def _save_split_results(self, result, base_filename):
         """Save split results to the splits directory for manual verification"""
+        splits_dir = os.path.join(os.path.dirname(__file__), "splits")
         for i, split_img in enumerate(result):
             # Create filename with original name and split index
             filename = f"{base_filename}_split_{i:02d}.jpg"
-            filepath = os.path.join(self.splits_dir, filename)
+            filepath = os.path.join(splits_dir, filename)
             split_img.save(filepath)
         return len(result)
     
