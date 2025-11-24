@@ -18,6 +18,7 @@ import time
 import traceback
 from enum import Enum
 from math import ceil
+from typing import Tuple
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
 
@@ -342,8 +343,8 @@ def _resize_image(image, to_size):
     
     # Ok we can resize
     return image.resize((width_img, height_img), Image.Resampling.LANCZOS)
-    
-    
+
+
 @protect_bad_image
 def _fill_image_to_whole_size(image, to_size):
     # type: (Image, tuple[int, int]) -> Image
@@ -357,9 +358,9 @@ def _fill_image_to_whole_size(image, to_size):
     # If the image is small enough, put a margin of the left
     if image_width <= to_width - margin_left:
         paste_position = (margin_left, 0)
-    else: # ok no place for the margin ^^
+    else:  # ok no place for the margin ^^
         paste_position = (0, 0)
-        
+    
     final_image.paste(image, paste_position)
     
     return final_image
@@ -405,7 +406,7 @@ def _blurauto_crop_image(image):
 
 
 def _find_dominant_color(img):
-    # type: (Image) -> int
+    # type: (Image) -> Tuple[int]
     # Resizing parameters
     width, height = 150, 150
     img = img.resize((width, height), resample=0)
@@ -998,7 +999,7 @@ def convert_image(source, split_right=False, split_left=False):
         image = _apply_grey_palette(image, palette)  # palette are ok for manga black and white, and very small
     else:
         image = _apply_basic_grey(image)  # pillow is better for colors, but is very FAT
-        
+    
     # Adapt to the EReader native resolution
     image = _resize_image(image, size)
     image = _fill_image_to_whole_size(image, size)  # note: after gray pass (adding white pixel here)
