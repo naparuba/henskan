@@ -24,7 +24,8 @@ from typing import LiteralString
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QThread
 from PyQt6.QtWidgets import QFileDialog
 
-from .image import guess_manga_or_webtoon_image, is_splitable
+from .image import is_splitable
+from .webtoon import guess_manga_or_webtoon_image
 from .parameters import parameters
 from .ui_component import UIInput, UIRectButton, UIComboBox, UIProgressBar, UIRectButtonConvert
 from .util import find_compact_title, natural_key

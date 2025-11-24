@@ -7,7 +7,8 @@ import os
 
 from PIL import Image
 
-from henskan.image import _find_dominant_color, _is_full_background_image, _split_webtoon
+from henskan.webtoon import split_webtoon as _split_webtoon
+from henskan.image import _find_dominant_color, _is_full_background_image
 from .image_test_base import ImageTestBase
 
 
