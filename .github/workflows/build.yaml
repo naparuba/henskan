@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
+      - dev
   pull_request:
     branches:
       - master
+      - dev
 
 
 jobs:
@@ -39,26 +41,31 @@ jobs:
           pytest -v
 
       - name: Build with PyInstaller
+        if: github.ref == 'refs/heads/master'
         run: |
           pyinstaller --noconfirm henskan.spec
 
       - name: Compress dist directory
+        if: github.ref == 'refs/heads/master'
         run: |
           powershell Compress-Archive -Path dist\henskan -DestinationPath henskan-portable-v${{ env.VERSION }}.zip
 
       - name: Upload artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
         with:
           name: henskan-portable-v${{ env.VERSION }}.zip
           path: henskan-portable-v${{ env.VERSION }}.zip
 
       - name: Create Tag
+        if: github.ref == 'refs/heads/master'
         id: create_tag
         run: |
           git tag -f v${{ env.VERSION }}
           git push origin v${{ env.VERSION }} || true
 
       - name: Create Release
+        if: github.ref == 'refs/heads/master'
         id: create_release
         uses: softprops/action-gh-release@v2.0.8
         env:
@@ -69,6 +76,7 @@ jobs:
           prerelease: true
 
       - name: Upload Release Asset
+        if: github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2.0.8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
