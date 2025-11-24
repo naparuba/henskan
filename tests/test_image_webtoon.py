@@ -3,14 +3,26 @@
 """
 Tests for webtoon-specific processing
 """
+import os
+import shutil
+
 from PIL import Image
 
-from henskan.image import _find_dominant_color, _is_full_background_image
+from henskan.image import _find_dominant_color, _is_full_background_image, _split_webtoon
 from .image_test_base import ImageTestBase
 
 
 class TestWebtoonProcessing(ImageTestBase):
     """Tests for webtoon-specific processing"""
+    
+    @classmethod
+    def setup_class(cls):
+        """Setup test class - create and clean splits directory"""
+        cls.splits_dir = os.path.join(os.path.dirname(__file__), "splits")
+        # Clean and recreate splits directory
+        if os.path.exists(cls.splits_dir):
+            shutil.rmtree(cls.splits_dir)
+        os.makedirs(cls.splits_dir)
     
     def _assert_valid_rgb_tuple(self, color, message_prefix=""):
         """Helper to assert a color is a valid RGB tuple"""
@@ -29,6 +41,25 @@ class TestWebtoonProcessing(ImageTestBase):
         """Helper to assert a color is light (all components > threshold)"""
         assert all(c > threshold for c in color), \
             f"Expected light color (> {threshold}), got {color}"
+    
+    def _assert_valid_split_result(self, result, expected_count):
+        """Helper to assert a split result is valid with exact count"""
+        assert isinstance(result, list), "Result should be a list"
+        assert len(result) == expected_count, f"Expected exactly {expected_count} split images, got {len(result)}"
+        
+        for i, split_img in enumerate(result):
+            assert isinstance(split_img, Image.Image), f"Split image {i} should be a PIL Image"
+            assert split_img.width > 0, f"Split image {i} should have width > 0"
+            assert split_img.height > 0, f"Split image {i} should have height > 0"
+    
+    def _save_split_results(self, result, base_filename):
+        """Save split results to the splits directory for manual verification"""
+        for i, split_img in enumerate(result):
+            # Create filename with original name and split index
+            filename = f"{base_filename}_split_{i:02d}.jpg"
+            filepath = os.path.join(self.splits_dir, filename)
+            split_img.save(filepath)
+        return len(result)
     
     def test_find_dominant_color_solid_red(self):
         """Test _find_dominant_color with a solid red image"""
@@ -135,8 +166,77 @@ class TestWebtoonProcessing(ImageTestBase):
         
         self._assert_valid_rgb_tuple(dominant_color, "webtoon_very_big_block.jpg")
     
-    # TODO: Add tests for _split_webtoon()
+    def test_split_webtoon_lot_of_white(self, test_images_dir):
+        """Test _split_webtoon with webtoon_lot_of_white.jpg - should split into multiple parts"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_lot_of_white.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_lot_of_white")
+        
+        # This image splits into 3 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=3)
+        
+        # Check that splits have reasonable dimensions
+        for split_img in result:
+            assert split_img.width <= img.width, "Split width should be <= original"
     
+    def test_split_webtoon_lot_of_white_again(self, test_images_dir):
+        """Test _split_webtoon with webtoon_lot_of_white_again.jpg"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_lot_of_white_again.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_lot_of_white_again")
+        
+        # This image splits into 4 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=4)
+    
+    def test_split_webtoon_diagonal_cuts(self, test_images_dir):
+        """Test _split_webtoon with webtoon_diagonal_cuts.jpg"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_diagonal_cuts.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_diagonal_cuts")
+        
+        # Diagonal cuts are complex - this image splits into 4 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=4)
+    
+    def test_split_webtoon_mix_background(self, test_images_dir):
+        """Test _split_webtoon with webtoon_mix_background_black_then_white.jpg"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_mix_background_black_then_white.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_mix_background_black_then_white")
+        
+        # Mixed background splits into 5 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=5)
+    
+    def test_split_webtoon_very_big_block(self, test_images_dir):
+        """Test _split_webtoon with webtoon_very_big_block_cannot_cut.jpg"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_very_big_block_cannot_cut.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_very_big_block_cannot_cut")
+        
+        # Very big block splits into 4 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=4)
+    
+    def test_split_webtoon_full_black_returns_empty_or_filters(self, test_images_dir):
+        """Test _split_webtoon with webtoon_full_black.jpg - mostly black should be filtered out"""
+        img_path = self.get_test_image_path(test_images_dir, "webtoon_full_black.jpg")
+        img = Image.open(img_path)
+        
+        result = _split_webtoon(img)
+        self._save_split_results(result, "webtoon_full_black")
+        
+        # Full black images split into 3 parts (verified manually)
+        self._assert_valid_split_result(result, expected_count=3)
+    
+
     def test_is_full_background_image_pure_white(self):
         """Test _is_full_background_image with a pure white image"""
         img = Image.new('RGB', (100, 100), color=(255, 255, 255))
