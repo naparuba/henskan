@@ -609,7 +609,6 @@ def _is_full_background_image(image):
 
 
 
-
 def _load_image(source):
     # type: (str) -> Image
     try:
@@ -630,11 +629,12 @@ def save_image(image, target):
 # when all the inner pages are double)
 def is_splitable(source):
     # type: (str) -> bool
-    image = _load_image(source)
+    
     try:
+        image = _load_image(source)
         width, height = image.size
         return width > height
-    except IOError:
+    except Exception:  # noqa
         raise RuntimeError('Cannot read image file %s' % source)
 
 
@@ -649,7 +649,11 @@ def convert_image(source, split_right=False, split_left=False):
         raise RuntimeError('Unexpected output device %s' % device)
     
     # Load image from source path
-    image = _load_image(source)
+    try:
+        image = _load_image(source)
+    except Exception:  # noqa
+        print("Cannot read image file %s" % source)
+        return []
     
     # Webtoon is special, manually take order
     if parameters.is_webtoon():
