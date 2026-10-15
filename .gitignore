@@ -9,6 +9,10 @@ dist
 henskan/tmp/*
 henskan/resources/*
 
+# Test directories (generated during tests)
+tests/deleted_images/
+tests/splits/
+
 *.DS_Store
 .AppleDouble
 .LSOverride
